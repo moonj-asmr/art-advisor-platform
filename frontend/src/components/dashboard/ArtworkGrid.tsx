@@ -1,65 +1,48 @@
-import React, { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import React from 'react';
 
 interface Artwork {
   id: number;
-  artist: string;
   title: string;
+  artist: string;
   price: string;
   gallery: string;
 }
 
-interface ArtworkGridProps {
+interface Props {
   artworks: Artwork[];
   selectedArtworks: number[];
-  onSelectionChange: (selectedIds: number[]) => void;
-  sortBy: string;
+  onSelect: (id: number) => void;
 }
 
-export const ArtworkGrid: React.FC<ArtworkGridProps> = ({
-  artworks,
-  selectedArtworks,
-  onSelectionChange,
-  sortBy
-}) => {
+export const ArtworkGrid: React.FC<Props> = ({ artworks, selectedArtworks, onSelect }) => {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-      {artworks
-        .sort((a, b) => a[sortBy].localeCompare(b[sortBy]))
-        .map((artwork) => {
-          const isSelected = selectedArtworks.includes(artwork.id);
-          return (
-            <Card 
-              key={artwork.id} 
-              className={`overflow-hidden cursor-pointer transition-all ${
-                isSelected ? 'ring-2 ring-blue-500' : ''
-              }`}
-              onClick={() => {
-                onSelectionChange(
-                  isSelected 
-                    ? selectedArtworks.filter(id => id !== artwork.id)
-                    : [...selectedArtworks, artwork.id]
-                );
-              }}
-            >
-              <div className="aspect-square bg-gray-100">
-                <img 
-                  src="/api/placeholder/200/200" 
-                  alt={artwork.title}
-                  className="w-full h-full object-cover"
-                />
+    <div className="artwork-grid">
+      {artworks.map((artwork) => {
+        const isSelected = selectedArtworks.includes(artwork.id);
+        return (
+          <div 
+            key={artwork.id}
+            className={`artwork-card cursor-pointer ${isSelected ? 'ring-2 ring-blue-500' : ''}`}
+            onClick={() => onSelect(artwork.id)}
+          >
+            <div className="artwork-image">
+              <img 
+                src={`https://picsum.photos/seed/${artwork.id}/800/1000`}
+                alt={artwork.title}
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="p-4 space-y-2">
+              <h3 className="font-medium text-lg">{artwork.title}</h3>
+              <p className="text-gray-600">{artwork.artist}</p>
+              <div className="flex justify-between items-center pt-2">
+                <span className="text-gray-500 text-sm">{artwork.gallery}</span>
+                <span className="font-medium">{artwork.price}</span>
               </div>
-              <CardContent className="p-2">
-                <p className="text-xs font-medium truncate">{artwork.title}</p>
-                <p className="text-xs text-gray-600 truncate">{artwork.artist}</p>
-                <div className="flex justify-between items-center mt-1">
-                  <span className="text-xs text-gray-600">{artwork.gallery}</span>
-                  <span className="text-xs font-medium">{artwork.price}</span>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 };
