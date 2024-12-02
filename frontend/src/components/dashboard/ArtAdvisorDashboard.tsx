@@ -1,140 +1,134 @@
 import React, { useState } from 'react';
-import { Card, CardHeader, CardContent } from '@/components/ui/card';
-import { TabsContent, Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Upload, Filter, Users, FileText, Plus } from 'lucide-react';
+import { UploadZone } from './UploadZone';
+import { ArtworkGrid } from './ArtworkGrid';
+import { Plus, FileText, Filter } from 'lucide-react';
 
-export const ArtAdvisorDashboard = () => {
-  const [selectedArtworks, setSelectedArtworks] = useState([]);
-  const [sortBy, setSortBy] = useState('artist');
-  const [artworks, setArtworks] = useState([
-    { id: 1, artist: "Yu Nishimura", title: "portrait (orange on blue)", price: "€20,000", gallery: "CASTLE" },
-    { id: 2, artist: "Magnus Frederik Clausen", title: "Tolvoverfemtiltreiotte", price: "$4,900", gallery: "CASTLE" },
-    { id: 3, artist: "Yu Nishimura", title: "meditation", price: "€20,000", gallery: "CASTLE" },
-  ]);
+const SAMPLE_ARTWORKS = [
+  {
+    id: 1,
+    artist: "Yu Nishimura",
+    title: "portrait (orange on blue)",
+    price: "€20,000",
+    gallery: "CASTLE",
+  },
+  {
+    id: 2,
+    artist: "Magnus Frederik Clausen",
+    title: "Tolvoverfemtiltreiotte",
+    price: "$4,900",
+    gallery: "CASTLE",
+  },
+  {
+    id: 3,
+    artist: "Yu Nishimura",
+    title: "meditation",
+    price: "€20,000",
+    gallery: "CASTLE",
+  },
+  {
+    id: 4,
+    artist: "Magnus Frederik Clausen",
+    title: "Untitled (Study)",
+    price: "$5,200",
+    gallery: "CASTLE",
+  },
+  {
+    id: 5,
+    artist: "Yu Nishimura",
+    title: "Autumn Light",
+    price: "€18,000",
+    gallery: "CASTLE",
+  },
+  {
+    id: 6,
+    artist: "Magnus Frederik Clausen",
+    title: "Time Series III",
+    price: "$6,800",
+    gallery: "CASTLE",
+  }
+];
+
+export const ArtAdvisorDashboard: React.FC = () => {
+  const [selectedArtworks, setSelectedArtworks] = useState<number[]>([]);
+  const [activeTab, setActiveTab] = useState('artworks');
+
+  const handleArtworkSelect = (id: number) => {
+    setSelectedArtworks(prev =>
+      prev.includes(id) ? prev.filter(artworkId => artworkId !== id) : [...prev, id]
+    );
+  };
+
+  const tabs = [
+    { id: 'artworks', label: 'Artwork Library' },
+    { id: 'pdfs', label: 'PDF Management' },
+    { id: 'clients', label: 'Client Portfolios' },
+  ];
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Art Advisor Dashboard</h1>
-        <div className="space-x-4">
-          <span className="text-gray-600">Storage: 45/100 PDFs</span>
-          <span className="text-gray-600">Premium Account</span>
-        </div>
+    <div className="space-y-8">
+      {/* Tabs */}
+      <div className="flex border-b border-gray-200">
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            className={`px-6 py-3 font-medium text-sm ${
+              activeTab === tab.id
+                ? 'border-b-2 border-blue-500 text-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+            onClick={() => setActiveTab(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
-      <Tabs defaultValue="artworks" className="w-full">
-        <TabsList className="mb-8">
-          <TabsTrigger value="artworks">Artwork Library</TabsTrigger>
-          <TabsTrigger value="pdfs">PDF Management</TabsTrigger>
-          <TabsTrigger value="clients">Client Portfolios</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="artworks">
+      {activeTab === 'artworks' && (
+        <div className="space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* PDF Upload Card */}
-            <Card className="bg-gray-50">
-              <CardContent className="p-6">
-                <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-gray-300 rounded-lg">
-                  <Upload className="w-12 h-12 text-gray-400 mb-4" />
-                  <p className="text-gray-600">Drop PDFs here or click to upload</p>
-                  <p className="text-sm text-gray-500 mt-2">Support for gallery and art fair PDFs</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Art Fair Filters */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <h3 className="font-semibold">Active Art Fairs</h3>
-                <Filter className="w-4 h-4" />
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex items-center">
-                    <input type="checkbox" className="mr-2" />
-                    <span>Art Basel Miami 2024</span>
-                  </div>
-                  <div className="flex items-center">
-                    <input type="checkbox" className="mr-2" />
-                    <span>Frieze Los Angeles 2024</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Upload Zone */}
+            <div className="md:col-span-2">
+              <UploadZone />
+            </div>
 
             {/* Quick Actions */}
-            <Card>
-              <CardHeader>
-                <h3 className="font-semibold">Quick Actions</h3>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <button className="flex items-center text-blue-600">
+            <div className="bg-white rounded-lg shadow-sm p-6 space-y-4">
+              <h3 className="font-medium text-lg">Quick Actions</h3>
+              <div className="space-y-3">
+                <button className="w-full flex items-center justify-center px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors">
                   <Plus className="w-4 h-4 mr-2" />
-                  Create New Client Portfolio
+                  Create New Portfolio
                 </button>
-                <button className="flex items-center text-blue-600">
+                <button className="w-full flex items-center justify-center px-4 py-2 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">
                   <FileText className="w-4 h-4 mr-2" />
-                  Generate PDF Report
+                  Generate Report
                 </button>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
 
           {/* Artwork Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mt-8">
-            {artworks
-              .sort((a, b) => a[sortBy].localeCompare(b[sortBy]))
-              .map((artwork) => {
-                const isSelected = selectedArtworks.includes(artwork.id);
-                return (
-                  <Card 
-                    key={artwork.id} 
-                    className={`overflow-hidden cursor-pointer transition-all ${
-                      isSelected ? 'ring-2 ring-blue-500' : ''
-                    }`}
-                    onClick={() => {
-                      setSelectedArtworks(prev => 
-                        isSelected 
-                          ? prev.filter(id => id !== artwork.id)
-                          : [...prev, artwork.id]
-                      );
-                    }}
-                  >
-                    <div className="aspect-square bg-gray-100">
-                      <img 
-                        src="/api/placeholder/200/200" 
-                        alt={artwork.title}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <CardContent className="p-2">
-                      <p className="text-xs font-medium truncate">{artwork.title}</p>
-                      <p className="text-xs text-gray-600 truncate">{artwork.artist}</p>
-                      <div className="flex justify-between items-center mt-1">
-                        <span className="text-xs text-gray-600">{artwork.gallery}</span>
-                        <span className="text-xs font-medium">{artwork.price}</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="pdfs">
           <div className="space-y-4">
-            <h3 className="text-xl font-semibold">Uploaded PDFs</h3>
-            {/* PDF management interface would go here */}
+            <div className="flex justify-between items-center">
+              <div className="flex items-center space-x-2">
+                <h2 className="text-lg font-medium">Available Artworks</h2>
+                <span className="text-sm text-gray-500">
+                  {selectedArtworks.length} selected
+                </span>
+              </div>
+              <button className="flex items-center text-gray-600 hover:text-gray-900">
+                <Filter className="w-4 h-4 mr-1" />
+                Filter
+              </button>
+            </div>
+            <ArtworkGrid
+              artworks={SAMPLE_ARTWORKS}
+              selectedArtworks={selectedArtworks}
+              onSelect={handleArtworkSelect}
+            />
           </div>
-        </TabsContent>
-
-        <TabsContent value="clients">
-          <div className="space-y-4">
-            <h3 className="text-xl font-semibold">Client Portfolios</h3>
-            {/* Client management interface would go here */}
-          </div>
-        </TabsContent>
-      </Tabs>
+        </div>
+      )}
     </div>
   );
 };
