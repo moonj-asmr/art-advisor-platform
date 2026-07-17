@@ -81,7 +81,7 @@ export const SwipeCard: React.FC<Props> = ({ artwork, active, stackIndex, onDeci
       onPointerUp={onPointerUp}
       onPointerCancel={settle}
     >
-      <div className="w-full h-full bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col relative">
+      <div className="w-full h-full bg-white rounded-2xl border border-zinc-200 shadow-[0_8px_30px_rgba(0,0,0,0.12)] overflow-hidden flex flex-col relative">
         {/* decision stamps */}
         <div
           className="absolute top-6 left-5 z-10 border-4 border-emerald-500 text-emerald-500 rounded-lg px-3 py-1 text-2xl font-extrabold tracking-widest rotate-[-14deg]"
@@ -97,9 +97,9 @@ export const SwipeCard: React.FC<Props> = ({ artwork, active, stackIndex, onDeci
         </div>
 
         {showDetails ? (
-          <div className="flex-1 overflow-y-auto p-5 bg-neutral-950 text-neutral-100">
-            <div className="text-lg font-semibold">{artwork.artist || 'Unknown artist'}</div>
-            <div className="italic text-neutral-300 mb-3">
+          <div className="flex-1 overflow-y-auto p-5 bg-white text-zinc-800">
+            <div className="text-lg font-semibold text-zinc-900">{artwork.artist || 'Unknown artist'}</div>
+            <div className="italic text-zinc-500 mb-3">
               {artwork.title}
               {artwork.year ? `, ${artwork.year}` : ''}
             </div>
@@ -107,8 +107,8 @@ export const SwipeCard: React.FC<Props> = ({ artwork, active, stackIndex, onDeci
               {artwork.medium && <div>{artwork.medium}</div>}
               {artwork.dimensions && <div>{artwork.dimensions}</div>}
               {artwork.edition && <div>{artwork.edition}</div>}
-              {artwork.gallery && <div className="text-neutral-400">{artwork.gallery}</div>}
-              {artwork.price && <div className="font-semibold text-base pt-1">{artwork.price}</div>}
+              {artwork.gallery && <div className="text-zinc-500">{artwork.gallery}</div>}
+              {artwork.price && <div className="font-semibold text-base pt-1 text-zinc-900">{artwork.price}</div>}
             </dl>
             {artwork.detail_image_urls.length > 0 && (
               <div className="grid grid-cols-2 gap-2 mb-4">
@@ -118,13 +118,13 @@ export const SwipeCard: React.FC<Props> = ({ artwork, active, stackIndex, onDeci
               </div>
             )}
             {artwork.description && (
-              <p className="text-sm text-neutral-300 whitespace-pre-line leading-relaxed">{artwork.description}</p>
+              <p className="text-sm text-zinc-600 whitespace-pre-line leading-relaxed">{artwork.description}</p>
             )}
-            <p className="text-xs text-neutral-500 mt-4">Tap card to flip back · PDF pages {artwork.pages.join(', ')}</p>
+            <p className="text-xs text-zinc-400 mt-4">Tap card to flip back · PDF pages {artwork.pages.join(', ')}</p>
           </div>
         ) : (
           <>
-            <div className="flex-1 bg-neutral-100 overflow-hidden flex items-center justify-center">
+            <div className="flex-1 bg-zinc-50 overflow-hidden flex items-center justify-center">
               {artwork.image_url ? (
                 <img
                   src={mediaUrl(artwork.image_url)}
@@ -133,22 +133,22 @@ export const SwipeCard: React.FC<Props> = ({ artwork, active, stackIndex, onDeci
                   draggable={false}
                 />
               ) : (
-                <div className="text-neutral-400 text-sm">No image extracted</div>
+                <div className="text-zinc-400 text-sm">No image extracted</div>
               )}
             </div>
-            <div className="p-4 bg-white border-t border-neutral-100">
+            <div className="p-4 bg-white border-t border-zinc-100">
               <div className="flex items-baseline justify-between gap-3">
-                <div className="font-semibold text-neutral-900 truncate">{artwork.artist || 'Unknown artist'}</div>
-                {artwork.price && <div className="font-semibold text-neutral-900 whitespace-nowrap">{artwork.price}</div>}
+                <div className="font-semibold text-zinc-900 truncate">{artwork.artist || 'Unknown artist'}</div>
+                {artwork.price && <div className="font-semibold text-zinc-900 whitespace-nowrap">{artwork.price}</div>}
               </div>
-              <div className="italic text-sm text-neutral-600 truncate">
+              <div className="italic text-sm text-zinc-500 truncate">
                 {artwork.title}
                 {artwork.year ? `, ${artwork.year}` : ''}
               </div>
               <div className="flex items-center justify-between mt-1">
-                <div className="text-xs text-neutral-400 truncate">{artwork.gallery}</div>
+                <div className="text-xs text-zinc-400 truncate">{artwork.gallery}</div>
                 {(artwork.detail_image_urls.length > 0 || artwork.description) && (
-                  <div className="text-xs text-neutral-400 whitespace-nowrap ml-2">tap for details</div>
+                  <div className="text-xs text-zinc-400 whitespace-nowrap ml-2">tap for details</div>
                 )}
               </div>
             </div>

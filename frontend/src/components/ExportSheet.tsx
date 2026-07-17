@@ -66,41 +66,41 @@ export const ExportSheet: React.FC<Props> = ({ artworks, onClose }) => {
     }
   };
 
-  const field = 'mt-1 w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-100 focus:outline-none focus:border-neutral-500';
+  const field = 'mt-1 w-full bg-white border border-zinc-300 rounded-lg px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:border-zinc-500';
   const chip = (activeCond: boolean) =>
-    `px-3 py-1.5 rounded-full text-sm border ${activeCond ? 'bg-white text-neutral-900 border-white font-medium' : 'border-neutral-700 text-neutral-300'}`;
+    `px-3 py-1.5 rounded-full text-sm border ${activeCond ? 'bg-zinc-900 text-white border-zinc-900 font-medium' : 'border-zinc-300 text-zinc-600'}`;
 
   return (
-    <div className="fixed inset-0 z-40 bg-black/70 flex items-end sm:items-center justify-center" onClick={onClose}>
+    <div className="fixed inset-0 z-40 bg-black/40 flex items-end sm:items-center justify-center" onClick={onClose}>
       <div
-        className="bg-neutral-900 w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-5 max-h-[90vh] overflow-y-auto border border-neutral-800"
+        className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-5 max-h-[90vh] overflow-y-auto border border-zinc-200 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-1">
-          <h3 className="font-semibold text-neutral-100">Export client PDF</h3>
-          <button onClick={onClose} className="text-neutral-400 hover:text-white">
+          <h3 className="font-semibold text-zinc-900">Export client PDF</h3>
+          <button onClick={onClose} className="text-zinc-400 hover:text-zinc-900">
             <X className="w-5 h-5" />
           </button>
         </div>
-        <p className="text-xs text-neutral-500 mb-4">
+        <p className="text-xs text-zinc-500 mb-4">
           {artworks.length} work{artworks.length === 1 ? '' : 's'} · one per page, in your formatting — not the galleries'.
         </p>
 
         <label className="block mb-3">
-          <span className="text-xs text-neutral-400">Title (cover & header)</span>
+          <span className="text-xs text-zinc-500">Title (cover & header)</span>
           <input className={field} placeholder="e.g. Art Basel — Selections" value={opts.title} onChange={(e) => set('title', e.target.value)} />
         </label>
         <label className="block mb-3">
-          <span className="text-xs text-neutral-400">Client name (personalizes the cover)</span>
+          <span className="text-xs text-zinc-500">Client name (personalizes the cover)</span>
           <input className={field} placeholder="e.g. Alice Chen" value={opts.client_name} onChange={(e) => set('client_name', e.target.value)} />
         </label>
         <label className="block mb-4">
-          <span className="text-xs text-neutral-400">Your name / advisory (footer)</span>
+          <span className="text-xs text-zinc-500">Your name / advisory (footer)</span>
           <input className={field} placeholder="e.g. Britt Art Advisory" value={opts.advisor_name} onChange={(e) => set('advisor_name', e.target.value)} />
         </label>
 
         <div className="mb-4">
-          <span className="text-xs text-neutral-400 block mb-2">Layout</span>
+          <span className="text-xs text-zinc-500 block mb-2">Layout</span>
           <div className="flex gap-2 flex-wrap">
             <button className={chip(opts.align === 'left')} onClick={() => set('align', 'left')}>Left aligned</button>
             <button className={chip(opts.align === 'center')} onClick={() => set('align', 'center')}>Centered</button>
@@ -110,13 +110,13 @@ export const ExportSheet: React.FC<Props> = ({ artworks, onClose }) => {
         </div>
 
         <label className="block mb-4">
-          <span className="text-xs text-neutral-400">Image size</span>
+          <span className="text-xs text-zinc-500">Image size</span>
           <input
             type="range" min={0.6} max={1.25} step={0.05} value={opts.image_scale}
             onChange={(e) => set('image_scale', Number(e.target.value))}
-            className="w-full mt-2 accent-white"
+            className="w-full mt-2 accent-zinc-900"
           />
-          <div className="flex justify-between text-[10px] text-neutral-500"><span>Intimate</span><span>Large</span></div>
+          <div className="flex justify-between text-[10px] text-zinc-400"><span>Intimate</span><span>Large</span></div>
         </label>
 
         <div className="mb-4 space-y-2">
@@ -125,25 +125,25 @@ export const ExportSheet: React.FC<Props> = ({ artworks, onClose }) => {
             ['show_gallery', 'Show gallery names'],
             ['show_description', 'Include artist texts'],
           ] as const).map(([k, label]) => (
-            <label key={k} className="flex items-center gap-2 text-sm text-neutral-300">
-              <input type="checkbox" checked={opts[k]} onChange={(e) => set(k, e.target.checked)} className="accent-white" />
+            <label key={k} className="flex items-center gap-2 text-sm text-zinc-700">
+              <input type="checkbox" checked={opts[k]} onChange={(e) => set(k, e.target.checked)} className="accent-zinc-900" />
               {label}
             </label>
           ))}
         </div>
 
         <label className="block mb-5">
-          <span className="text-xs text-neutral-400">Your logo (appears on cover & each page)</span>
-          <input type="file" accept="image/png,image/jpeg" onChange={(e) => onLogo(e.target.files?.[0])} className="mt-1 block w-full text-xs text-neutral-400 file:mr-3 file:rounded-full file:border-0 file:bg-neutral-800 file:px-3 file:py-1.5 file:text-neutral-200" />
-          {logoName && <span className="text-xs text-emerald-400">✓ {logoName}</span>}
+          <span className="text-xs text-zinc-500">Your logo (appears on cover & each page)</span>
+          <input type="file" accept="image/png,image/jpeg" onChange={(e) => onLogo(e.target.files?.[0])} className="mt-1 block w-full text-xs text-zinc-500 file:mr-3 file:rounded-full file:border-0 file:bg-zinc-100 file:px-3 file:py-1.5 file:text-zinc-700" />
+          {logoName && <span className="text-xs text-emerald-600">✓ {logoName}</span>}
         </label>
 
-        {error && <div className="text-xs text-rose-400 mb-3">{error}</div>}
+        {error && <div className="text-xs text-rose-500 mb-3">{error}</div>}
 
         <button
           onClick={doExport}
           disabled={busy}
-          className="w-full flex items-center justify-center gap-2 bg-white text-neutral-900 font-semibold rounded-lg py-3 hover:bg-neutral-200 disabled:opacity-60"
+          className="w-full flex items-center justify-center gap-2 bg-zinc-900 text-white font-semibold rounded-full py-3 hover:bg-zinc-700 disabled:opacity-60"
         >
           {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
           {busy ? 'Building PDF…' : 'Download PDF'}
