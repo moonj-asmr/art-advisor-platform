@@ -58,6 +58,16 @@ export const api = {
       body: JSON.stringify({ name }),
     }).then((r) => json<{ id: number; name: string }>(r)),
 
+  renameCollection: (id: number, name: string) =>
+    fetch(`${BASE}/api/collections/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    }).then((r) => json(r)),
+
+  deleteCollection: (id: number) =>
+    fetch(`${BASE}/api/collections/${id}`, { method: 'DELETE' }).then((r) => json(r)),
+
   uploads: () => fetch(`${BASE}/api/uploads`).then((r) => json<UploadRecord[]>(r)),
 
   updateUploadGallery: (id: number, gallery: string) =>

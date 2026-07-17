@@ -39,6 +39,19 @@ def create_collection(body: CollectionCreate, db: Session = Depends(get_db)):
     return {"id": c.id, "name": c.name}
 
 
+@router.patch("/{collection_id}")
+def rename_collection(collection_id: int, body: CollectionCreate, db: Session = Depends(get_db)):
+    c = db.get(Collection, collection_id)
+    if not c:
+        raise HTTPException(404, "Collection not found")
+    name = body.name.strip()
+    if not name:
+        raise HTTPException(400, "Name required")
+    c.name = name
+    db.commit()
+    return {"id": c.id, "name": c.name}
+
+
 @router.delete("/{collection_id}")
 def delete_collection(collection_id: int, db: Session = Depends(get_db)):
     c = db.get(Collection, collection_id)
