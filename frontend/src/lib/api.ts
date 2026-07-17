@@ -1,0 +1,78 @@
+import type { Artwork, Collection, ExportOptions, UploadRecord } from '../types';
+
+const BASE = import.meta.env.VITE_API_URL || '';
+
+async function json<T>(res: Response): Promise<T> {
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(body || `Request failed (${res.status})`);
+  }
+  return res.json();
+}
+
+export const api = {
+  artworks: (params: { status?: string; collection_id?: number | null } = {}) => {
+    const q = new URLSearchParams();
+    if (params.status) q.set('status', params.status);
+    if (params.collection_id != null) q.set('collection_id', String(params.collection_id));
+    return fetch(`${BASE}/api/artworks?${q}`).then((r) => json<Artwork[]>(r));
+  },
+
+  decide: (id: number, decision: 'liked' | 'passed' | 'pending') =>
+    fetch(`${BASE}/api/artworks/${id}/decision`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ decision }),
+    }).then((r) => json<Artwork>(r)),
+
+  updateArtwork: (id: number, patch: Partial<Artwork>) =>
+    fetch(`${BASE}/api/artworks/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(patch),
+    }).then((r) => json<Artwork>(r)),
+
+  deleteArtwork: (id: number) =>
+    fetch(`${BASE}/api/artworks/${id}`, { method: 'DELETE' }).then((r) => json(r)),
+
+  collections: () => fetch(`${BASE}/api/collections`).then((r) => json<Collection[]>(r)),
+
+  createCollection: (name: string) =>
+    fetch(`${BASE}/api/collections`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    }).then((r) => json<{ id: number; name: string }>(r)),
+
+  uploads: () => fetch(`${BASE}/api/uploads`).then((r) => json<UploadRecord[]>(r)),
+
+  uploadPdf: (file: File, collectionId: number | null, gallery: string) => {
+    const form = new FormData();
+    form.append('file', file);
+    if (collectionId != null) form.append('collection_id', String(collectionId));
+    if (gallery) form.append('gallery', gallery);
+    return fetch(`${BASE}/api/uploads`, { method: 'POST', body: form }).then((r) =>
+      json<{ upload_id: number; artworks_found: number; gallery: string }>(r),
+    );
+  },
+
+  uploadLogo: (file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return fetch(`${BASE}/api/export/logo`, { method: 'POST', body: form }).then((r) =>
+      json<{ logo_media: string }>(r),
+    );
+  },
+
+  exportPdf: async (artworkIds: number[], opts: ExportOptions): Promise<Blob> => {
+    const res = await fetch(`${BASE}/api/export`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ artwork_ids: artworkIds, ...opts }),
+    });
+    if (!res.ok) throw new Error(await res.text().catch(() => 'Export failed'));
+    return res.blob();
+  },
+};
+
+export const mediaUrl = (path: string | null) => (path ? `${BASE}${path}` : '');
