@@ -18,6 +18,8 @@ function App() {
   const [allocation, setAllocation] = useState<number[]>([]);
   const [pickingAllocation, setPickingAllocation] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  // floating nav hides on scroll-down, jogs back on scroll-up
+  const [navVisible, setNavVisible] = useState(true);
 
   const reload = useCallback(async () => {
     try {
@@ -35,6 +37,10 @@ function App() {
   useEffect(() => {
     reload();
   }, [reload]);
+
+  useEffect(() => {
+    setNavVisible(true); // switching tabs always brings the nav back
+  }, [tab]);
 
   const pending = artworks.filter((a) => a.status === 'pending');
   const decided = artworks.filter((a) => a.status !== 'pending');
@@ -73,7 +79,7 @@ function App() {
           .join(', ');
 
   return (
-    <div className="h-dvh bg-white text-zinc-900 flex flex-col max-w-md mx-auto sm:border-x sm:border-zinc-200 relative">
+    <div className="h-dvh bg-white text-zinc-900 flex flex-col max-w-md mx-auto sm:border-x sm:border-zinc-200 relative overflow-hidden">
       {/* header: app name + (on deck) where right-swipes are going */}
       <header
         className="px-4 pb-2 flex items-center justify-between gap-3"
@@ -109,14 +115,23 @@ function App() {
             collections={collections}
             onChanged={reload}
             onCreateCollection={createCollection}
+            onNavVisible={setNavVisible}
           />
         ) : (
-          <InboxView uploads={uploads} onUploaded={reload} />
+          <InboxView uploads={uploads} onUploaded={reload} onNavVisible={setNavVisible} />
         )}
       </main>
 
-      {/* bottom tab bar */}
-      <nav className="border-t border-zinc-200 bg-white flex justify-around py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+      {/* floating lozenge nav */}
+      <nav
+        className={`absolute left-1/2 z-30 flex items-center gap-1 bg-white/90 backdrop-blur border border-zinc-200 shadow-[0_8px_24px_rgba(0,0,0,0.14)] rounded-full px-1.5 py-1.5 transition-all duration-300 ${
+          navVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+        style={{
+          bottom: 'max(env(safe-area-inset-bottom), 0.9rem)',
+          transform: `translateX(-50%) translateY(${navVisible ? '0' : '6rem'})`,
+        }}
+      >
         {([
           ['deck', Layers, 'Deck', pending.length],
           ['library', Heart, 'Library', likedCount],
@@ -125,12 +140,16 @@ function App() {
           <button
             key={key}
             onClick={() => setTab(key)}
-            className={`relative flex flex-col items-center gap-0.5 px-6 py-1 text-xs ${tab === key ? 'text-zinc-900' : 'text-zinc-400'}`}
+            className={`relative flex items-center gap-1.5 text-xs rounded-full px-3.5 py-2 ${
+              tab === key ? 'bg-zinc-900 text-white font-medium' : 'text-zinc-500'
+            }`}
           >
-            <Icon className="w-5 h-5" />
+            <Icon className="w-4 h-4" />
             {label}
             {badge > 0 && (
-              <span className="absolute -top-0.5 right-2.5 bg-zinc-900 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">
+              <span className={`text-[10px] font-bold rounded-full min-w-[15px] h-[15px] px-1 flex items-center justify-center ${
+                tab === key ? 'bg-white text-zinc-900' : 'bg-zinc-200 text-zinc-700'
+              }`}>
                 {badge}
               </span>
             )}

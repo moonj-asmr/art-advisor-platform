@@ -2,6 +2,7 @@ import os
 import tempfile
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from ..models.database import MEDIA_DIR, get_db
@@ -89,11 +90,41 @@ def list_uploads(db: Session = Depends(get_db)):
     ]
 
 
-@router.delete("/{upload_id}")
-def delete_upload(upload_id: int, db: Session = Depends(get_db)):
+class UploadPatch(BaseModel):
+    gallery: str
+
+
+@router.patch("/{upload_id}")
+def update_upload(upload_id: int, body: UploadPatch, db: Session = Depends(get_db)):
+    """Rename the gallery on a processed PDF — flows through to its artworks."""
     upload = db.get(Upload, upload_id)
     if not upload:
         raise HTTPException(404, "Upload not found")
+    gallery = body.gallery.strip()
+    upload.gallery = gallery
+    for art in upload.artworks:
+        art.gallery = gallery
+    db.commit()
+    return {"id": upload.id, "gallery": upload.gallery, "artworks_updated": len(upload.artworks)}
+
+
+@router.delete("/{upload_id}")
+def delete_upload(upload_id: int, db: Session = Depends(get_db)):
+    """Remove a processed PDF and everything that came from it — the artworks
+    (wherever they sit in the library) and their extracted images on disk."""
+    upload = db.get(Upload, upload_id)
+    if not upload:
+        raise HTTPException(404, "Upload not found")
+    for art in upload.artworks:
+        for path in [art.image_path, *(art.detail_image_paths or [])]:
+            if not path:
+                continue
+            file_path = os.path.join(MEDIA_DIR, os.path.basename(path))
+            try:
+                os.unlink(file_path)
+            except OSError:
+                pass
+        art.collections = []
     db.delete(upload)
     db.commit()
     return {"deleted": upload_id}
