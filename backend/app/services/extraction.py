@@ -48,9 +48,12 @@ MEDIUM_WORDS = re.compile(
 )
 NOISE_LINE = re.compile(
     r"^(page \d+|\d+|www\..*|.*@.*\..*|\+?[\d\s().-]{7,}|(available works|price list|"
-    r"presentation|preview|booth\s+\w+|for sale|enquiries?|inquiries?).*)$",
+    r"presentation|preview|booth\s+\w+|for sale|enquiries?|inquiries?|contact|"
+    r"all prices|prices? (are|include|exclude|do not)|courtesy( of)?|photo(graph)?s?\s*(by|:)|"
+    r"©|copyright|vat |framed dimensions|t[.:]\s|tel[.:]?\s|fax[.:]?\s).*)$",
     re.IGNORECASE,
 )
+CONTACT_RE = re.compile(r"(@|www\.|https?://|\btel\b|\bfax\b|\+\d[\d\s().-]{6,})", re.IGNORECASE)
 
 
 @dataclass
@@ -108,6 +111,9 @@ def parse_caption(text: str) -> dict:
             return False
         if YEAR_RE.fullmatch(stripped):
             return False
+        # names don't carry digits or contact fragments
+        if re.search(r"\d", stripped) or CONTACT_RE.search(l):
+            return False
         return all(w[:1].isupper() or w.isupper() or "-" in w for w in words if w.isalpha() or "-" in w)
 
     for line in body_lines:
@@ -131,10 +137,15 @@ def parse_caption(text: str) -> dict:
             break
     if not fields["title"]:
         for line in body_lines:
-            if not (DIMENSIONS_RE.search(line) or MEDIUM_WORDS.search(line)):
-                fields["title"] = line
-                body_lines = [l for l in body_lines if l != line]
-                break
+            if DIMENSIONS_RE.search(line) or MEDIUM_WORDS.search(line):
+                continue
+            if CONTACT_RE.search(line) or len(line) > 120:
+                continue
+            fields["title"] = line
+            body_lines = [l for l in body_lines if l != line]
+            break
+    if len(fields["title"]) > 120:
+        fields["title"] = fields["title"][:117] + "…"
 
     # Medium: line with material words (strip dims/edition if same line).
     for line in body_lines:
@@ -221,7 +232,7 @@ def extract_artworks(pdf_path: str, media_dir: str) -> List[ParsedArtwork]:
                 if not current.image_path:
                     current.image_path = current.detail_image_paths.pop(0)
                 current.pages.append(page_index + 1)
-            if word_count > 40 and score <= 1:
+            if word_count > 40 and score <= 1 and not _is_contact_page(text):
                 para = text.strip()
                 current.description = (current.description + "\n\n" + para).strip()
                 if page_index + 1 not in current.pages:
@@ -238,16 +249,63 @@ def extract_artworks(pdf_path: str, media_dir: str) -> List[ParsedArtwork]:
     return [a for a in artworks if a.image_path or a.title or a.artist]
 
 
+def _is_contact_page(text: str) -> bool:
+    """Contact/imprint pages are dense with emails, urls, phone numbers."""
+    lines = [l for l in (s.strip() for s in text.split("\n")) if l]
+    if not lines:
+        return False
+    contact = sum(1 for l in lines if CONTACT_RE.search(l))
+    return contact >= 2 and contact >= len(lines) * 0.3
+
+
+GALLERY_WORD = re.compile(r"\b(gallery|galerie|galleria|galería|fine art|projects?|kunsthalle)\b", re.I)
+
+
 def guess_gallery_name(pdf_path: str) -> str:
-    """Best-effort gallery name from the first page or the filename."""
+    """Best-effort gallery name.
+
+    Galleries brand their PDFs by repeating their name in a header or footer
+    on every page — that repetition is the strongest signal. Fall back to a
+    gallery-ish line on the cover, then to the filename.
+    """
     doc = fitz.open(pdf_path)
     try:
-        first = doc[0].get_text("text")
-        for line in first.split("\n"):
-            line = _clean(line)
-            if re.search(r"\b(gallery|galerie|galleria|fine art|projects?)\b", line, re.I) and len(line) < 60:
-                return line
+        pages = [doc[i].get_text("text") for i in range(doc.page_count)]
     finally:
         doc.close()
+
+    from collections import Counter
+
+    counter: Counter = Counter()
+    for text in pages:
+        seen = set()
+        for line in text.split("\n"):
+            line = _clean(line)
+            if not line or len(line) > 60 or line.lower() in seen:
+                continue
+            if PRICE_RE.search(line) or DIMENSIONS_RE.search(line) or CONTACT_RE.search(line):
+                continue
+            if re.fullmatch(r"[\d\s/|.–-]+", line):
+                continue
+            seen.add(line.lower())
+            counter[line] += 1
+
+    if len(pages) >= 3:
+        # a repeated line that names a gallery wins outright
+        for line, count in counter.most_common(12):
+            if count >= max(2, len(pages) // 2) and GALLERY_WORD.search(line):
+                return line
+
+    for line in (pages[0].split("\n") if pages else []):
+        line = _clean(line)
+        if GALLERY_WORD.search(line) and len(line) < 60:
+            return line
+
+    if len(pages) >= 4:
+        # branding repeated on nearly every page, even without a gallery word
+        for line, count in counter.most_common(5):
+            if count >= len(pages) * 0.8:
+                return line
+
     base = os.path.splitext(os.path.basename(pdf_path))[0]
     return _clean(re.sub(r"[_-]+", " ", base))[:60]

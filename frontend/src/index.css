@@ -9,7 +9,7 @@
     height: 100%;
   }
   body {
-    @apply bg-neutral-950 text-neutral-100 antialiased;
+    @apply bg-white text-zinc-900 antialiased;
     overscroll-behavior: none;
     -webkit-tap-highlight-color: transparent;
   }

@@ -49,8 +49,8 @@ export const SelectsView: React.FC<Props> = ({ liked, onChanged }) => {
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-center px-8 gap-3">
         <div className="text-4xl">♥</div>
-        <h2 className="text-lg font-semibold text-neutral-100">No selects yet</h2>
-        <p className="text-sm text-neutral-400 max-w-xs">
+        <h2 className="text-lg font-semibold text-zinc-900">No selects yet</h2>
+        <p className="text-sm text-zinc-500 max-w-xs">
           Swipe right on works in the deck and they will collect here, ready to refine and send to clients.
         </p>
       </div>
@@ -59,13 +59,13 @@ export const SelectsView: React.FC<Props> = ({ liked, onChanged }) => {
 
   return (
     <div className="flex-1 overflow-y-auto px-4 pb-24">
-      <div className="flex items-center justify-between py-3 sticky top-0 bg-neutral-950/95 backdrop-blur z-10">
-        <div className="text-sm text-neutral-400">
+      <div className="flex items-center justify-between py-3 sticky top-0 bg-white/95 backdrop-blur z-10">
+        <div className="text-sm text-zinc-500">
           {liked.length} work{liked.length === 1 ? '' : 's'} selected
         </div>
         <button
           onClick={() => setExporting(true)}
-          className="flex items-center gap-2 bg-white text-neutral-900 text-sm font-semibold rounded-full px-4 py-2 hover:bg-neutral-200"
+          className="flex items-center gap-2 bg-zinc-900 text-white text-sm font-semibold rounded-full px-4 py-2 hover:bg-zinc-700"
         >
           <FileDown className="w-4 h-4" /> Export PDF
         </button>
@@ -73,31 +73,31 @@ export const SelectsView: React.FC<Props> = ({ liked, onChanged }) => {
 
       <div className="grid grid-cols-2 gap-3">
         {liked.map((a) => (
-          <div key={a.id} className="bg-neutral-900 rounded-xl overflow-hidden border border-neutral-800">
-            <div className="aspect-square bg-neutral-800 flex items-center justify-center">
+          <div key={a.id} className="bg-white rounded-xl overflow-hidden border border-zinc-200">
+            <div className="aspect-square bg-zinc-100 flex items-center justify-center">
               {a.image_url ? (
                 <img src={mediaUrl(a.image_url)} alt={a.title} className="w-full h-full object-cover" />
               ) : (
-                <span className="text-xs text-neutral-500">No image</span>
+                <span className="text-xs text-zinc-400">No image</span>
               )}
             </div>
             <div className="p-2.5">
-              <div className="text-sm font-medium text-neutral-100 truncate">{a.artist || 'Unknown'}</div>
-              <div className="text-xs italic text-neutral-400 truncate">
+              <div className="text-sm font-medium text-zinc-900 truncate">{a.artist || 'Unknown'}</div>
+              <div className="text-xs italic text-zinc-500 truncate">
                 {a.title}
                 {a.year ? `, ${a.year}` : ''}
               </div>
               <div className="flex items-center justify-between mt-1">
-                <span className="text-xs text-neutral-300 font-medium">{a.price}</span>
+                <span className="text-xs text-zinc-700 font-medium">{a.price}</span>
               </div>
               <div className="flex items-center gap-1 mt-2">
-                <button title="Edit caption" onClick={() => openEdit(a)} className="p-1.5 rounded-md bg-neutral-800 text-neutral-300 hover:text-white">
+                <button title="Edit caption" onClick={() => openEdit(a)} className="p-1.5 rounded-md bg-zinc-100 text-zinc-500 hover:text-zinc-900">
                   <Pencil className="w-3.5 h-3.5" />
                 </button>
-                <button title="Back to deck" onClick={() => backToDeck(a)} className="p-1.5 rounded-md bg-neutral-800 text-neutral-300 hover:text-white">
+                <button title="Back to deck" onClick={() => backToDeck(a)} className="p-1.5 rounded-md bg-zinc-100 text-zinc-500 hover:text-zinc-900">
                   <RotateCcw className="w-3.5 h-3.5" />
                 </button>
-                <button title="Remove from selects" onClick={() => removeFromSelects(a)} className="p-1.5 rounded-md bg-neutral-800 text-rose-400 hover:text-rose-300 ml-auto">
+                <button title="Remove from selects" onClick={() => removeFromSelects(a)} className="p-1.5 rounded-md bg-zinc-100 text-rose-500 hover:text-rose-600 ml-auto">
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -108,31 +108,31 @@ export const SelectsView: React.FC<Props> = ({ liked, onChanged }) => {
 
       {/* edit modal */}
       {editing && (
-        <div className="fixed inset-0 z-40 bg-black/70 flex items-end sm:items-center justify-center" onClick={() => setEditing(null)}>
+        <div className="fixed inset-0 z-40 bg-black/40 flex items-end sm:items-center justify-center" onClick={() => setEditing(null)}>
           <div
-            className="bg-neutral-900 w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-5 max-h-[85vh] overflow-y-auto border border-neutral-800"
+            className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-5 max-h-[85vh] overflow-y-auto border border-zinc-200 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-neutral-100">Edit caption</h3>
-              <button onClick={() => setEditing(null)} className="text-neutral-400 hover:text-white">
+              <h3 className="font-semibold text-zinc-900">Edit caption</h3>
+              <button onClick={() => setEditing(null)} className="text-zinc-400 hover:text-zinc-900">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <p className="text-xs text-neutral-500 mb-3">
+            <p className="text-xs text-zinc-500 mb-3">
               Extraction is automatic — fix anything the PDF made ambiguous. This is what prints on the client PDF.
             </p>
             {EDIT_FIELDS.map(([key, label]) => (
               <label key={key} className="block mb-3">
-                <span className="text-xs text-neutral-400">{label}</span>
+                <span className="text-xs text-zinc-500">{label}</span>
                 <input
-                  className="mt-1 w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-100 focus:outline-none focus:border-neutral-500"
+                  className="mt-1 w-full bg-white border border-zinc-300 rounded-lg px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:border-zinc-500"
                   value={(form[key] as string) ?? ''}
                   onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
                 />
               </label>
             ))}
-            <button onClick={saveEdit} className="w-full bg-white text-neutral-900 font-semibold rounded-lg py-2.5 mt-2 hover:bg-neutral-200">
+            <button onClick={saveEdit} className="w-full bg-zinc-900 text-white font-semibold rounded-lg py-2.5 mt-2 hover:bg-zinc-700">
               Save
             </button>
           </div>
