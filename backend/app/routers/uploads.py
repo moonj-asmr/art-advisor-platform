@@ -36,13 +36,21 @@ async def upload_pdf(
         tmp_path = tmp.name
     try:
         parsed = extract_artworks(tmp_path, MEDIA_DIR)
-        gallery_name = gallery.strip() or guess_gallery_name(tmp_path)
+        gallery_name = gallery.strip() or guess_gallery_name(tmp_path, fallback_name=file.filename)
         import fitz
 
         with fitz.open(tmp_path) as d:
             page_count = d.page_count
     finally:
         os.unlink(tmp_path)
+
+    # the caption parser can mistake the gallery's own name for the artist
+    if gallery_name:
+        g = gallery_name.lower()
+        for art in parsed:
+            a = art.artist.lower()
+            if a and (a in g or g in a):
+                art.artist = ""
 
     upload = Upload(
         filename=file.filename, gallery=gallery_name,

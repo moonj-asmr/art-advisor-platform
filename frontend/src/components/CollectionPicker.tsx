@@ -8,6 +8,7 @@ interface Props {
   collections: Collection[];
   selected: number[];
   confirmLabel: string;
+  includeGeneral?: boolean; // show a "General" row that means "no collection"
   onConfirm: (ids: number[]) => void;
   onCreate: (name: string) => Promise<void>;
   onRename: (id: number, name: string) => Promise<void>;
@@ -19,7 +20,7 @@ interface Props {
  *  "allocate swipes into…" on the deck and "add to collection" in the library.
  *  Also the home of collection management: rename and delete. */
 export const CollectionPicker: React.FC<Props> = ({
-  title, subtitle, collections, selected, confirmLabel, onConfirm, onCreate, onRename, onDelete, onClose,
+  title, subtitle, collections, selected, confirmLabel, includeGeneral, onConfirm, onCreate, onRename, onDelete, onClose,
 }) => {
   const [chosen, setChosen] = useState<number[]>(selected);
   const [newName, setNewName] = useState('');
@@ -67,7 +68,27 @@ export const CollectionPicker: React.FC<Props> = ({
         {subtitle && <p className="text-xs text-zinc-500 mb-3">{subtitle}</p>}
 
         <div className="space-y-1.5 mb-4">
-          {collections.length === 0 && (
+          {includeGeneral && (
+            <button
+              onClick={() => setChosen([])}
+              className={`w-full flex items-center justify-between rounded-xl border px-4 py-3 text-left ${
+                chosen.length === 0 ? 'border-zinc-900 bg-zinc-50' : 'border-zinc-200'
+              }`}
+            >
+              <div>
+                <div className="text-sm text-zinc-900">General</div>
+                <div className="text-xs text-zinc-500">No collection — just into your selects</div>
+              </div>
+              <span
+                className={`w-5 h-5 rounded-full border flex items-center justify-center ${
+                  chosen.length === 0 ? 'bg-zinc-900 border-zinc-900 text-white' : 'border-zinc-300 text-transparent'
+                }`}
+              >
+                <Check className="w-3.5 h-3.5" />
+              </span>
+            </button>
+          )}
+          {collections.length === 0 && !includeGeneral && (
             <p className="text-sm text-zinc-400 py-2">No collections yet — create one below.</p>
           )}
           {collections.map((c) => {

@@ -39,6 +39,30 @@ def test_parse_caption_ignores_contact_noise():
     assert "www" not in fields["medium"]
 
 
+def test_dealer_line_is_not_the_artist():
+    """A dealer/catalogue name above the caption must not be read as the artist."""
+    text = ("AMERICAN ART CATALOGUES\nSatoko Otsuka\nSeven of Swords, 2025\n"
+            "Oil on panel\n40 x 30 cm\n$10,500.00\n")
+    fields = parse_caption(text)
+    assert fields["artist"] == "Satoko Otsuka"
+    assert fields["title"] == "Seven of Swords"
+    assert "10,500" in fields["price"]
+
+
+def test_gallery_fallback_uses_original_filename(tmp_path):
+    """When nothing in the PDF names a gallery, fall back to the uploaded
+    filename — never the server's temp path."""
+    pdf = tmp_path / "tmpxyz123.pdf"  # simulates a NamedTemporaryFile path
+    doc = fitz.open()
+    page = doc.new_page(width=595, height=842)
+    page.insert_textbox(fitz.Rect(60, 100, 535, 300),
+                        "Some Artist\nWork, 2025\nOil on canvas\n100 x 80 cm\n$ 10,000",
+                        fontname="helv", fontsize=11)
+    doc.save(str(pdf))
+    doc.close()
+    assert guess_gallery_name(str(pdf), fallback_name="kasmin-summer-list.pdf") == "kasmin summer list"
+
+
 def test_gallery_name_from_repeated_footer(tmp_path):
     """The gallery's name repeated in a page footer beats the filename guess."""
     pdf = tmp_path / "availability_list_final_v2.pdf"

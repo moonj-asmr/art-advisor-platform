@@ -90,20 +90,21 @@ function App() {
   return (
     <div className="h-dvh bg-white text-zinc-900 flex flex-col max-w-md mx-auto sm:border-x sm:border-zinc-200 relative overflow-hidden">
       {/* header: app name + (on deck) where right-swipes are going */}
-      <header
-        className="px-4 pb-2 flex items-center justify-between gap-3"
-        style={{ paddingTop: 'max(env(safe-area-inset-top), 1rem)' }}
-      >
-        <h1 className="font-semibold tracking-tight text-lg">Advisory<span className="text-zinc-400">Deck</span></h1>
-        {tab === 'deck' && (
-          <button
-            onClick={() => setPickingAllocation(true)}
-            className="flex items-center gap-1 bg-zinc-100 border border-zinc-200 text-zinc-600 text-xs rounded-full pl-3 pr-2 py-1.5 max-w-[58%]"
-          >
-            <span className="truncate">Selecting for: <span className="text-zinc-900 font-medium">{allocationLabel}</span></span>
-            <ChevronDown className="w-3.5 h-3.5 shrink-0" />
-          </button>
-        )}
+      <header className="px-4" style={{ paddingTop: 'max(env(safe-area-inset-top), 1rem)' }}>
+        {/* fixed-height row so the wordmark sits identically on every tab */}
+        <div className="h-9 flex items-center justify-between gap-3">
+          <h1 className="font-semibold tracking-tight text-lg leading-none">Advisory<span className="text-zinc-400">Deck</span></h1>
+          {tab === 'deck' && (
+            <button
+              onClick={() => setPickingAllocation(true)}
+              className="flex items-center gap-1 bg-zinc-100 border border-zinc-200 text-zinc-600 text-xs rounded-full pl-3 pr-2 py-1.5 max-w-[58%]"
+            >
+              <span className="truncate">Selecting for: <span className="text-zinc-900 font-medium">{allocationLabel}</span></span>
+              <ChevronDown className="w-3.5 h-3.5 shrink-0" />
+            </button>
+          )}
+        </div>
+        <div className="h-2" />
       </header>
 
       {/* body */}
@@ -172,9 +173,10 @@ function App() {
       {pickingAllocation && (
         <CollectionPicker
           title="Selecting for…"
-          subtitle="Right-swipes are allocated into these collections. Leave everything unticked for a general selection — you can always allocate later in the Library."
+          subtitle="Right-swipes are allocated into the ticked collections — or into General, your unfiled selection. You can always re-allocate later in the Library."
           collections={collections}
           selected={allocation}
+          includeGeneral
           confirmLabel="Done"
           onConfirm={(ids) => {
             setAllocation(ids);
