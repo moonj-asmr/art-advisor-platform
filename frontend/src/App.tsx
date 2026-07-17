@@ -69,6 +69,15 @@ function App() {
     await api.createCollection(name);
     setCollections(await api.collections());
   };
+  const renameCollection = async (id: number, name: string) => {
+    await api.renameCollection(id, name);
+    setCollections(await api.collections());
+  };
+  const deleteCollection = async (id: number) => {
+    await api.deleteCollection(id);
+    setAllocation((a) => a.filter((x) => x !== id));
+    await reload();
+  };
 
   const allocationLabel =
     allocation.length === 0
@@ -115,6 +124,8 @@ function App() {
             collections={collections}
             onChanged={reload}
             onCreateCollection={createCollection}
+            onRenameCollection={renameCollection}
+            onDeleteCollection={deleteCollection}
             onNavVisible={setNavVisible}
           />
         ) : (
@@ -122,14 +133,15 @@ function App() {
         )}
       </main>
 
-      {/* floating lozenge nav */}
+      {/* floating lozenge nav — full card width, fixed height shared with the
+          Library's select-mode action bar so the two swap without jumping */}
       <nav
-        className={`absolute left-1/2 z-30 flex items-center gap-1 bg-white/90 backdrop-blur border border-zinc-200 shadow-[0_8px_24px_rgba(0,0,0,0.14)] rounded-full px-1.5 py-1.5 transition-all duration-300 ${
+        className={`absolute left-4 right-4 z-30 h-[52px] flex items-center gap-1 bg-white/90 backdrop-blur border border-zinc-200 shadow-[0_8px_24px_rgba(0,0,0,0.14)] rounded-full px-1.5 transition-all duration-300 ${
           navVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         style={{
           bottom: 'max(env(safe-area-inset-bottom), 0.9rem)',
-          transform: `translateX(-50%) translateY(${navVisible ? '0' : '6rem'})`,
+          transform: `translateY(${navVisible ? '0' : '6rem'})`,
         }}
       >
         {([
@@ -140,7 +152,7 @@ function App() {
           <button
             key={key}
             onClick={() => setTab(key)}
-            className={`relative flex items-center gap-1.5 text-xs rounded-full px-3.5 py-2 ${
+            className={`relative flex-1 h-[40px] flex items-center justify-center gap-1.5 text-xs rounded-full ${
               tab === key ? 'bg-zinc-900 text-white font-medium' : 'text-zinc-500'
             }`}
           >
@@ -169,6 +181,8 @@ function App() {
             setPickingAllocation(false);
           }}
           onCreate={createCollection}
+          onRename={renameCollection}
+          onDelete={deleteCollection}
           onClose={() => setPickingAllocation(false)}
         />
       )}

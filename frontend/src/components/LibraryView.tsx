@@ -12,6 +12,8 @@ interface Props {
   collections: Collection[];
   onChanged: () => void;
   onCreateCollection: (name: string) => Promise<void>;
+  onRenameCollection: (id: number, name: string) => Promise<void>;
+  onDeleteCollection: (id: number) => Promise<void>;
   onNavVisible: (visible: boolean) => void;
 }
 
@@ -26,7 +28,9 @@ const EDIT_FIELDS: Array<[keyof Artwork, string]> = [
   ['gallery', 'Gallery'],
 ];
 
-export const LibraryView: React.FC<Props> = ({ artworks, collections, onChanged, onCreateCollection, onNavVisible }) => {
+export const LibraryView: React.FC<Props> = ({
+  artworks, collections, onChanged, onCreateCollection, onRenameCollection, onDeleteCollection, onNavVisible,
+}) => {
   const [segment, setSegment] = useState<Segment>('liked');
   const [filter, setFilter] = useState<number | 'all'>('all');
   const [selectMode, setSelectMode] = useState(false);
@@ -43,6 +47,11 @@ export const LibraryView: React.FC<Props> = ({ artworks, collections, onChanged,
     // the multi-select action bar takes the nav's spot
     onNavVisible(!actionBarOpen);
   }, [actionBarOpen, onNavVisible]);
+
+  useEffect(() => {
+    // a deleted collection can't stay the active filter
+    if (filter !== 'all' && !collections.some((c) => c.id === filter)) setFilter('all');
+  }, [collections, filter]);
 
   const onScroll = (e: React.UIEvent<HTMLDivElement>) => {
     if (actionBarOpen) return;
@@ -226,36 +235,35 @@ export const LibraryView: React.FC<Props> = ({ artworks, collections, onChanged,
         )}
       </div>
 
-      {/* multi-select action bar (floats where the nav lozenge sits) */}
+      {/* multi-select action bar — same size and place as the nav lozenge */}
       {actionBarOpen && (
         <div
-          className="absolute left-3 right-3 z-30 bg-white/95 backdrop-blur border border-zinc-200 shadow-[0_8px_24px_rgba(0,0,0,0.14)] rounded-2xl px-3 py-2.5 flex items-center gap-1.5 flex-wrap"
+          className="absolute left-4 right-4 z-30 h-[52px] bg-white/95 backdrop-blur border border-zinc-200 shadow-[0_8px_24px_rgba(0,0,0,0.14)] rounded-full px-2 flex items-center justify-center gap-1 overflow-x-auto"
           style={{ bottom: 'max(env(safe-area-inset-bottom), 0.9rem)' }}
         >
-          <span className="text-xs text-zinc-500 mr-0.5">{checked.length}</span>
           <button
             onClick={() => setPicking(true)}
-            className="flex items-center gap-1.5 bg-zinc-900 text-white text-xs font-semibold rounded-full px-3 py-2"
+            className="flex items-center gap-1.5 bg-zinc-900 text-white text-xs font-semibold rounded-full px-2.5 py-2 whitespace-nowrap shrink-0"
           >
             <FolderPlus className="w-3.5 h-3.5" /> Add
           </button>
           {segment === 'liked' && (
             <button
               onClick={() => setExportingChecked(true)}
-              className="flex items-center gap-1.5 bg-zinc-900 text-white text-xs font-semibold rounded-full px-3 py-2"
+              className="flex items-center gap-1.5 bg-zinc-900 text-white text-xs font-semibold rounded-full px-2.5 py-2 whitespace-nowrap shrink-0"
             >
               <FileDown className="w-3.5 h-3.5" /> Export
             </button>
           )}
           <button
             onClick={bulkSwap}
-            className="flex items-center gap-1.5 bg-zinc-100 text-zinc-700 text-xs font-semibold rounded-full px-3 py-2"
+            className="flex items-center gap-1.5 bg-zinc-100 text-zinc-700 text-xs font-semibold rounded-full px-2.5 py-2 whitespace-nowrap shrink-0"
           >
             <ArrowLeftRight className="w-3.5 h-3.5" /> {segment === 'liked' ? 'Pass' : 'Select'}
           </button>
           <button
             onClick={bulkBackToDeck}
-            className="flex items-center gap-1.5 bg-zinc-100 text-zinc-700 text-xs font-semibold rounded-full px-3 py-2 ml-auto"
+            className="flex items-center gap-1.5 bg-zinc-100 text-zinc-700 text-xs font-semibold rounded-full px-2.5 py-2 whitespace-nowrap shrink-0"
           >
             <Layers className="w-3.5 h-3.5" /> Re-deck
           </button>
@@ -301,6 +309,8 @@ export const LibraryView: React.FC<Props> = ({ artworks, collections, onChanged,
           confirmLabel="Add"
           onConfirm={bulkAddToCollections}
           onCreate={onCreateCollection}
+          onRename={onRenameCollection}
+          onDelete={onDeleteCollection}
           onClose={() => setPicking(false)}
         />
       )}

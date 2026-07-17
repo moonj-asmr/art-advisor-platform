@@ -145,6 +145,25 @@ def test_export_pdf(uploaded):
     doc.close()
 
 
+def test_rename_and_delete_collection_keeps_artworks(uploaded):
+    cid = client.post("/api/collections", json={"name": "Temp Fair"}).json()["id"]
+    art = client.get("/api/artworks").json()[0]
+    client.post("/api/artworks/bulk/collections",
+                json={"artwork_ids": [art["id"]], "collection_id": cid, "action": "add"})
+
+    r = client.patch(f"/api/collections/{cid}", json={"name": "Renamed Fair"})
+    assert r.status_code == 200 and r.json()["name"] == "Renamed Fair"
+    assert any(c["name"] == "Renamed Fair" for c in client.get("/api/collections").json())
+
+    r = client.delete(f"/api/collections/{cid}")
+    assert r.status_code == 200
+    assert all(c["id"] != cid for c in client.get("/api/collections").json())
+    # the artwork survives, just without that membership
+    still = client.get("/api/artworks").json()
+    mine = next(a for a in still if a["id"] == art["id"])
+    assert cid not in mine["collection_ids"]
+
+
 def test_export_requires_ids():
     r = client.post("/api/export", json={"artwork_ids": []})
     assert r.status_code == 400

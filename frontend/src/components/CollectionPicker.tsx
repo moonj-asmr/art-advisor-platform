@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Check, Plus, X } from 'lucide-react';
+import { Check, Pencil, Plus, Trash2, X } from 'lucide-react';
 import type { Collection } from '../types';
 
 interface Props {
@@ -10,17 +10,23 @@ interface Props {
   confirmLabel: string;
   onConfirm: (ids: number[]) => void;
   onCreate: (name: string) => Promise<void>;
+  onRename: (id: number, name: string) => Promise<void>;
+  onDelete: (id: number) => Promise<void>;
   onClose: () => void;
 }
 
 /** Bottom sheet for choosing one or more collections — used both for
- *  "allocate swipes into…" on the deck and "add to collection" in the library. */
+ *  "allocate swipes into…" on the deck and "add to collection" in the library.
+ *  Also the home of collection management: rename and delete. */
 export const CollectionPicker: React.FC<Props> = ({
-  title, subtitle, collections, selected, confirmLabel, onConfirm, onCreate, onClose,
+  title, subtitle, collections, selected, confirmLabel, onConfirm, onCreate, onRename, onDelete, onClose,
 }) => {
   const [chosen, setChosen] = useState<number[]>(selected);
   const [newName, setNewName] = useState('');
   const [creating, setCreating] = useState(false);
+  const [renamingId, setRenamingId] = useState<number | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [confirmingDelete, setConfirmingDelete] = useState<number | null>(null);
 
   const toggle = (id: number) =>
     setChosen((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]));
@@ -32,6 +38,18 @@ export const CollectionPicker: React.FC<Props> = ({
     await onCreate(name);
     setNewName('');
     setCreating(false);
+  };
+
+  const saveRename = async () => {
+    if (renamingId == null || !renameValue.trim()) return;
+    await onRename(renamingId, renameValue.trim());
+    setRenamingId(null);
+  };
+
+  const confirmDelete = async (id: number) => {
+    await onDelete(id);
+    setChosen((c) => c.filter((x) => x !== id));
+    setConfirmingDelete(null);
   };
 
   return (
@@ -54,26 +72,74 @@ export const CollectionPicker: React.FC<Props> = ({
           )}
           {collections.map((c) => {
             const on = chosen.includes(c.id);
+            if (confirmingDelete === c.id) {
+              return (
+                <div key={c.id} className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3">
+                  <div className="text-sm text-zinc-900 mb-2">
+                    Delete “{c.name}”? The artworks themselves are kept.
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => confirmDelete(c.id)} className="px-3 py-1.5 rounded-full bg-rose-500 text-white text-xs font-semibold">
+                      Delete
+                    </button>
+                    <button onClick={() => setConfirmingDelete(null)} className="px-3 py-1.5 rounded-full bg-white border border-zinc-300 text-zinc-600 text-xs">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              );
+            }
             return (
-              <button
+              <div
                 key={c.id}
-                onClick={() => toggle(c.id)}
-                className={`w-full flex items-center justify-between rounded-xl border px-4 py-3 text-left ${
+                className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 ${
                   on ? 'border-zinc-900 bg-zinc-50' : 'border-zinc-200'
                 }`}
               >
-                <div>
-                  <div className="text-sm text-zinc-900">{c.name}</div>
-                  <div className="text-xs text-zinc-500">{c.counts.liked} selected</div>
-                </div>
-                <span
-                  className={`w-5 h-5 rounded-full border flex items-center justify-center ${
-                    on ? 'bg-zinc-900 border-zinc-900 text-white' : 'border-zinc-300 text-transparent'
-                  }`}
-                >
-                  <Check className="w-3.5 h-3.5" />
-                </span>
-              </button>
+                {renamingId === c.id ? (
+                  <>
+                    <input
+                      value={renameValue}
+                      onChange={(e) => setRenameValue(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && saveRename()}
+                      autoFocus
+                      className="flex-1 min-w-0 bg-white border border-zinc-300 rounded-md px-2 py-1.5 text-sm text-zinc-900 focus:outline-none focus:border-zinc-500"
+                    />
+                    <button onClick={saveRename} className="p-2 rounded-md bg-zinc-900 text-white shrink-0">
+                      <Check className="w-3.5 h-3.5" />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button onClick={() => toggle(c.id)} className="flex-1 min-w-0 text-left">
+                      <div className="text-sm text-zinc-900 truncate">{c.name}</div>
+                      <div className="text-xs text-zinc-500">{c.counts.liked} selected</div>
+                    </button>
+                    <button
+                      title="Rename"
+                      onClick={() => { setRenamingId(c.id); setRenameValue(c.name); }}
+                      className="p-1.5 rounded-md text-zinc-400 hover:text-zinc-900 shrink-0"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      title="Delete collection"
+                      onClick={() => setConfirmingDelete(c.id)}
+                      className="p-1.5 rounded-md text-zinc-400 hover:text-rose-500 shrink-0"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => toggle(c.id)}
+                      className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${
+                        on ? 'bg-zinc-900 border-zinc-900 text-white' : 'border-zinc-300 text-transparent'
+                      }`}
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                    </button>
+                  </>
+                )}
+              </div>
             );
           })}
         </div>
