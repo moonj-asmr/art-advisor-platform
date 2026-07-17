@@ -58,7 +58,7 @@ export const DeckView: React.FC<Props> = ({ pending, onDecided, onUndo, likedCou
   }
 
   return (
-    <div className="flex-1 flex flex-col px-4 pb-2 min-h-0">
+    <div className="flex-1 flex flex-col px-4 pb-16 min-h-0">
       <div className="relative flex-1 min-h-0 my-2">
         {pending.slice(0, 4).map((artwork, i) => (
           <SwipeCard

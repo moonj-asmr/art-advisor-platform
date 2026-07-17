@@ -148,3 +148,26 @@ def test_export_pdf(uploaded):
 def test_export_requires_ids():
     r = client.post("/api/export", json={"artwork_ids": []})
     assert r.status_code == 400
+
+
+def test_upload_gallery_rename_and_delete_cascade():
+    with tempfile.TemporaryDirectory() as d:
+        pdf = os.path.join(d, "second.pdf")
+        make_complex(pdf)
+        with open(pdf, "rb") as f:
+            up = client.post("/api/uploads", files={"file": ("second.pdf", f, "application/pdf")}).json()
+
+    # rename the gallery → artworks follow
+    r = client.patch(f"/api/uploads/{up['upload_id']}", json={"gallery": "Corrected Gallery"})
+    assert r.status_code == 200
+    arts = [a for a in client.get("/api/artworks").json() if a["upload_id"] == up["upload_id"]]
+    assert arts and all(a["gallery"] == "Corrected Gallery" for a in arts)
+
+    # delete the upload → its artworks and images disappear
+    image_urls = [a["image_url"] for a in arts if a["image_url"]]
+    r = client.delete(f"/api/uploads/{up['upload_id']}")
+    assert r.status_code == 200
+    remaining = [a for a in client.get("/api/artworks").json() if a["upload_id"] == up["upload_id"]]
+    assert remaining == []
+    for url in image_urls:
+        assert client.get(url).status_code == 404, "extracted images should be removed from disk"

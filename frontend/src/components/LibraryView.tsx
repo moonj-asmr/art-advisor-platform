@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeftRight, CheckCircle2, FileDown, FolderPlus, Layers, Pencil, X } from 'lucide-react';
 import { api, mediaUrl } from '../lib/api';
 import type { Artwork, Collection } from '../types';
@@ -12,6 +12,7 @@ interface Props {
   collections: Collection[];
   onChanged: () => void;
   onCreateCollection: (name: string) => Promise<void>;
+  onNavVisible: (visible: boolean) => void;
 }
 
 const EDIT_FIELDS: Array<[keyof Artwork, string]> = [
@@ -25,7 +26,7 @@ const EDIT_FIELDS: Array<[keyof Artwork, string]> = [
   ['gallery', 'Gallery'],
 ];
 
-export const LibraryView: React.FC<Props> = ({ artworks, collections, onChanged, onCreateCollection }) => {
+export const LibraryView: React.FC<Props> = ({ artworks, collections, onChanged, onCreateCollection, onNavVisible }) => {
   const [segment, setSegment] = useState<Segment>('liked');
   const [filter, setFilter] = useState<number | 'all'>('all');
   const [selectMode, setSelectMode] = useState(false);
@@ -33,7 +34,24 @@ export const LibraryView: React.FC<Props> = ({ artworks, collections, onChanged,
   const [editing, setEditing] = useState<Artwork | null>(null);
   const [form, setForm] = useState<Partial<Artwork>>({});
   const [exporting, setExporting] = useState(false);
+  const [exportingChecked, setExportingChecked] = useState(false);
   const [picking, setPicking] = useState(false);
+  const lastY = useRef(0);
+
+  const actionBarOpen = selectMode && checked.length > 0;
+  useEffect(() => {
+    // the multi-select action bar takes the nav's spot
+    onNavVisible(!actionBarOpen);
+  }, [actionBarOpen, onNavVisible]);
+
+  const onScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (actionBarOpen) return;
+    const y = e.currentTarget.scrollTop;
+    if (y < 24) onNavVisible(true);
+    else if (y - lastY.current > 6) onNavVisible(false);
+    else if (lastY.current - y > 6) onNavVisible(true);
+    lastY.current = y;
+  };
 
   const shown = useMemo(
     () =>
@@ -139,7 +157,7 @@ export const LibraryView: React.FC<Props> = ({ artworks, collections, onChanged,
       </div>
 
       {/* grid */}
-      <div className="flex-1 overflow-y-auto px-4 pb-28">
+      <div className="flex-1 overflow-y-auto px-4 pb-32" onScroll={onScroll}>
         {shown.length === 0 ? (
           <div className="text-center text-sm text-zinc-400 pt-16 px-8">
             {segment === 'liked'
@@ -208,21 +226,32 @@ export const LibraryView: React.FC<Props> = ({ artworks, collections, onChanged,
         )}
       </div>
 
-      {/* multi-select action bar */}
-      {selectMode && checked.length > 0 && (
-        <div className="absolute bottom-0 left-0 right-0 z-30 bg-white border-t border-zinc-200 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex items-center gap-2">
-          <span className="text-xs text-zinc-500 mr-1">{checked.length} chosen</span>
+      {/* multi-select action bar (floats where the nav lozenge sits) */}
+      {actionBarOpen && (
+        <div
+          className="absolute left-3 right-3 z-30 bg-white/95 backdrop-blur border border-zinc-200 shadow-[0_8px_24px_rgba(0,0,0,0.14)] rounded-2xl px-3 py-2.5 flex items-center gap-1.5 flex-wrap"
+          style={{ bottom: 'max(env(safe-area-inset-bottom), 0.9rem)' }}
+        >
+          <span className="text-xs text-zinc-500 mr-0.5">{checked.length}</span>
           <button
             onClick={() => setPicking(true)}
             className="flex items-center gap-1.5 bg-zinc-900 text-white text-xs font-semibold rounded-full px-3 py-2"
           >
-            <FolderPlus className="w-3.5 h-3.5" /> Add to collection
+            <FolderPlus className="w-3.5 h-3.5" /> Add
           </button>
+          {segment === 'liked' && (
+            <button
+              onClick={() => setExportingChecked(true)}
+              className="flex items-center gap-1.5 bg-zinc-900 text-white text-xs font-semibold rounded-full px-3 py-2"
+            >
+              <FileDown className="w-3.5 h-3.5" /> Export
+            </button>
+          )}
           <button
             onClick={bulkSwap}
             className="flex items-center gap-1.5 bg-zinc-100 text-zinc-700 text-xs font-semibold rounded-full px-3 py-2"
           >
-            <ArrowLeftRight className="w-3.5 h-3.5" /> {segment === 'liked' ? 'To Passed' : 'To Selected'}
+            <ArrowLeftRight className="w-3.5 h-3.5" /> {segment === 'liked' ? 'Pass' : 'Select'}
           </button>
           <button
             onClick={bulkBackToDeck}
@@ -278,6 +307,12 @@ export const LibraryView: React.FC<Props> = ({ artworks, collections, onChanged,
 
       {exporting && (
         <ExportSheet artworks={shown} onClose={() => setExporting(false)} />
+      )}
+      {exportingChecked && (
+        <ExportSheet
+          artworks={shown.filter((a) => checked.includes(a.id))}
+          onClose={() => setExportingChecked(false)}
+        />
       )}
     </div>
   );

@@ -60,6 +60,16 @@ export const api = {
 
   uploads: () => fetch(`${BASE}/api/uploads`).then((r) => json<UploadRecord[]>(r)),
 
+  updateUploadGallery: (id: number, gallery: string) =>
+    fetch(`${BASE}/api/uploads/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gallery }),
+    }).then((r) => json(r)),
+
+  deleteUpload: (id: number) =>
+    fetch(`${BASE}/api/uploads/${id}`, { method: 'DELETE' }).then((r) => json(r)),
+
   uploadPdf: (file: File, collectionId: number | null, gallery: string) => {
     const form = new FormData();
     form.append('file', file);
