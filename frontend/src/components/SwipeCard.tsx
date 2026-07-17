@@ -72,7 +72,7 @@ export const SwipeCard: React.FC<Props> = ({ artwork, active, stackIndex, onDeci
       style={{
         transform: `translate(${x}px, ${y + stackOffset}px) rotate(${active ? rotation : 0}deg) scale(${stackScale})`,
         transition: drag.dragging ? 'none' : 'transform 0.28s cubic-bezier(.2,.8,.3,1)',
-        zIndex: 50 - stackIndex,
+        zIndex: 20 - stackIndex, // stay below modal overlays (z-40+)
         pointerEvents: active ? 'auto' : 'none',
         opacity: stackIndex > 2 ? 0 : 1,
       }}

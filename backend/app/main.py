@@ -11,6 +11,25 @@ from .routers import artworks, collections, export, uploads
 
 Base.metadata.create_all(bind=engine)
 
+
+def _migrate_legacy_collection_stamps():
+    """Artworks used to carry a single collection_id; membership now lives in
+    the artwork_collections table. Carry old stamps over once."""
+    from sqlalchemy import text
+
+    with engine.begin() as conn:
+        conn.execute(text(
+            "INSERT OR IGNORE INTO artwork_collections (artwork_id, collection_id) "
+            "SELECT id, collection_id FROM artworks WHERE collection_id IS NOT NULL"
+        ) if engine.dialect.name == "sqlite" else text(
+            "INSERT INTO artwork_collections (artwork_id, collection_id) "
+            "SELECT id, collection_id FROM artworks WHERE collection_id IS NOT NULL "
+            "ON CONFLICT DO NOTHING"
+        ))
+
+
+_migrate_legacy_collection_stamps()
+
 app = FastAPI(title="Art Advisor Platform")
 
 app.add_middleware(

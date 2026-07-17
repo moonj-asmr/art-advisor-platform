@@ -1,28 +1,27 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Heart, Inbox, Layers } from 'lucide-react';
+import { ChevronDown, Heart, Inbox, Layers } from 'lucide-react';
 import { api } from './lib/api';
 import type { Artwork, Collection, UploadRecord } from './types';
+import { CollectionPicker } from './components/CollectionPicker';
 import { DeckView } from './components/DeckView';
 import { InboxView } from './components/InboxView';
-import { SelectsView } from './components/SelectsView';
+import { LibraryView } from './components/LibraryView';
 
-type Tab = 'deck' | 'selects' | 'inbox';
+type Tab = 'deck' | 'library' | 'inbox';
 
 function App() {
   const [tab, setTab] = useState<Tab>('deck');
   const [artworks, setArtworks] = useState<Artwork[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [uploads, setUploads] = useState<UploadRecord[]>([]);
-  const [activeCollection, setActiveCollection] = useState<number | null>(null);
+  // collections that right-swipes are allocated into right now
+  const [allocation, setAllocation] = useState<number[]>([]);
+  const [pickingAllocation, setPickingAllocation] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
   const reload = useCallback(async () => {
     try {
-      const [arts, cols, ups] = await Promise.all([
-        api.artworks({ collection_id: activeCollection }),
-        api.collections(),
-        api.uploads(),
-      ]);
+      const [arts, cols, ups] = await Promise.all([api.artworks(), api.collections(), api.uploads()]);
       setArtworks(arts);
       setCollections(cols);
       setUploads(ups);
@@ -31,47 +30,65 @@ function App() {
     } finally {
       setLoaded(true);
     }
-  }, [activeCollection]);
+  }, []);
 
   useEffect(() => {
     reload();
   }, [reload]);
 
   const pending = artworks.filter((a) => a.status === 'pending');
-  const liked = artworks.filter((a) => a.status === 'liked');
+  const decided = artworks.filter((a) => a.status !== 'pending');
+  const likedCount = artworks.filter((a) => a.status === 'liked').length;
 
   // optimistic swipe updates so the deck never waits on the network
   const onDecided = (artwork: Artwork, decision: 'liked' | 'passed') =>
-    setArtworks((arts) => arts.map((a) => (a.id === artwork.id ? { ...a, status: decision } : a)));
+    setArtworks((arts) =>
+      arts.map((a) =>
+        a.id === artwork.id
+          ? {
+              ...a,
+              status: decision,
+              collection_ids:
+                decision === 'liked'
+                  ? Array.from(new Set([...a.collection_ids, ...allocation]))
+                  : a.collection_ids,
+            }
+          : a,
+      ),
+    );
   const onUndo = (artwork: Artwork) =>
     setArtworks((arts) => arts.map((a) => (a.id === artwork.id ? { ...a, status: 'pending' } : a)));
 
   const createCollection = async (name: string) => {
     await api.createCollection(name);
-    const cols = await api.collections();
-    setCollections(cols);
-    const created = cols.find((c) => c.name === name);
-    if (created) setActiveCollection(created.id);
+    setCollections(await api.collections());
   };
 
+  const allocationLabel =
+    allocation.length === 0
+      ? 'General'
+      : collections
+          .filter((c) => allocation.includes(c.id))
+          .map((c) => c.name)
+          .join(', ');
+
   return (
-    <div className="h-dvh bg-white text-zinc-900 flex flex-col max-w-md mx-auto sm:border-x sm:border-zinc-200">
-      {/* header: app name + collection scope; padded below the iOS status bar */}
+    <div className="h-dvh bg-white text-zinc-900 flex flex-col max-w-md mx-auto sm:border-x sm:border-zinc-200 relative">
+      {/* header: app name + (on deck) where right-swipes are going */}
       <header
         className="px-4 pb-2 flex items-center justify-between gap-3"
         style={{ paddingTop: 'max(env(safe-area-inset-top), 1rem)' }}
       >
         <h1 className="font-semibold tracking-tight text-lg">Advisory<span className="text-zinc-400">Deck</span></h1>
-        <select
-          value={activeCollection ?? ''}
-          onChange={(e) => setActiveCollection(e.target.value ? Number(e.target.value) : null)}
-          className="bg-zinc-100 border border-zinc-200 text-zinc-600 text-xs rounded-full px-3 py-1.5 focus:outline-none max-w-[55%]"
-        >
-          <option value="">All works</option>
-          {collections.map((c) => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
-        </select>
+        {tab === 'deck' && (
+          <button
+            onClick={() => setPickingAllocation(true)}
+            className="flex items-center gap-1 bg-zinc-100 border border-zinc-200 text-zinc-600 text-xs rounded-full pl-3 pr-2 py-1.5 max-w-[58%]"
+          >
+            <span className="truncate">Selecting for: <span className="text-zinc-900 font-medium">{allocationLabel}</span></span>
+            <ChevronDown className="w-3.5 h-3.5 shrink-0" />
+          </button>
+        )}
       </header>
 
       {/* body */}
@@ -79,17 +96,22 @@ function App() {
         {!loaded ? (
           <div className="flex-1 flex items-center justify-center text-zinc-400 text-sm">Loading…</div>
         ) : tab === 'deck' ? (
-          <DeckView pending={pending} likedCount={liked.length} onDecided={onDecided} onUndo={onUndo} />
-        ) : tab === 'selects' ? (
-          <SelectsView liked={liked} onChanged={reload} />
-        ) : (
-          <InboxView
-            uploads={uploads}
+          <DeckView
+            pending={pending}
+            likedCount={likedCount}
+            allocation={allocation}
+            onDecided={onDecided}
+            onUndo={onUndo}
+          />
+        ) : tab === 'library' ? (
+          <LibraryView
+            artworks={decided}
             collections={collections}
-            activeCollection={activeCollection}
-            onUploaded={reload}
+            onChanged={reload}
             onCreateCollection={createCollection}
           />
+        ) : (
+          <InboxView uploads={uploads} onUploaded={reload} />
         )}
       </main>
 
@@ -97,7 +119,7 @@ function App() {
       <nav className="border-t border-zinc-200 bg-white flex justify-around py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         {([
           ['deck', Layers, 'Deck', pending.length],
-          ['selects', Heart, 'Selects', liked.length],
+          ['library', Heart, 'Library', likedCount],
           ['inbox', Inbox, 'Inbox', 0],
         ] as const).map(([key, Icon, label, badge]) => (
           <button
@@ -115,6 +137,22 @@ function App() {
           </button>
         ))}
       </nav>
+
+      {pickingAllocation && (
+        <CollectionPicker
+          title="Selecting for…"
+          subtitle="Right-swipes are allocated into these collections. Leave everything unticked for a general selection — you can always allocate later in the Library."
+          collections={collections}
+          selected={allocation}
+          confirmLabel="Done"
+          onConfirm={(ids) => {
+            setAllocation(ids);
+            setPickingAllocation(false);
+          }}
+          onCreate={createCollection}
+          onClose={() => setPickingAllocation(false)}
+        />
+      )}
     </div>
   );
 }

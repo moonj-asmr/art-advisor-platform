@@ -66,6 +66,50 @@ def test_collections():
     assert any(c["id"] == cid for c in listed)
 
 
+def test_swipe_allocates_into_collections(uploaded):
+    basel = client.post("/api/collections", json={"name": "Basel Paris"}).json()["id"]
+    client_list = client.post("/api/collections", json={"name": "Client: Chen"}).json()["id"]
+    art = client.get("/api/artworks").json()[2]
+
+    # right-swipe with two active collections → member of both
+    r = client.post(f"/api/artworks/{art['id']}/decision",
+                    json={"decision": "liked", "collection_ids": [basel, client_list]})
+    assert r.status_code == 200
+    assert set(r.json()["collection_ids"]) >= {basel, client_list}
+
+    # membership filter returns it
+    members = client.get("/api/artworks", params={"collection_id": basel}).json()
+    assert any(a["id"] == art["id"] for a in members)
+
+    # collection counts reflect membership
+    cols = {c["id"]: c for c in client.get("/api/collections").json()}
+    assert cols[basel]["counts"]["liked"] >= 1
+
+
+def test_bulk_collection_and_status(uploaded):
+    shortlist = client.post("/api/collections", json={"name": "Refined Shortlist"}).json()["id"]
+    arts = client.get("/api/artworks").json()
+    ids = [a["id"] for a in arts[:3]]
+
+    r = client.post("/api/artworks/bulk/collections",
+                    json={"artwork_ids": ids, "collection_id": shortlist, "action": "add"})
+    assert r.status_code == 200
+    members = client.get("/api/artworks", params={"collection_id": shortlist}).json()
+    assert {a["id"] for a in members} >= set(ids)
+
+    # remove one again
+    client.post("/api/artworks/bulk/collections",
+                json={"artwork_ids": ids[:1], "collection_id": shortlist, "action": "remove"})
+    members = client.get("/api/artworks", params={"collection_id": shortlist}).json()
+    assert ids[0] not in {a["id"] for a in members}
+
+    # bulk swap between selected and passed
+    r = client.post("/api/artworks/bulk/status", json={"artwork_ids": ids, "status": "passed"})
+    assert r.status_code == 200
+    r = client.post("/api/artworks/bulk/status", json={"artwork_ids": ids, "status": "liked"})
+    assert all(a["status"] == "liked" for a in client.get("/api/artworks").json() if a["id"] in ids)
+
+
 def test_media_served(uploaded):
     art = client.get("/api/artworks").json()[0]
     assert art["image_url"]

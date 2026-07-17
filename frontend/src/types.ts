@@ -16,6 +16,7 @@ export interface Artwork {
   pages: number[];
   status: 'pending' | 'liked' | 'passed';
   position: number;
+  collection_ids: number[];
 }
 
 export interface Collection {

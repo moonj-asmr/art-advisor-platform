@@ -55,6 +55,36 @@ def test_gallery_name_from_repeated_footer(tmp_path):
     assert guess_gallery_name(str(pdf)) == "Galerie Lindenstrasse"
 
 
+def test_solo_show_artist_from_cover(tmp_path):
+    """Solo-exhibition PDFs name the artist on the cover, not in each caption —
+    the extractor must carry that document-level context into every artwork."""
+    pdf = tmp_path / "solo.pdf"
+    media = tmp_path / "media"
+    media.mkdir()
+    doc = fitz.open()
+    cover = doc.new_page(width=595, height=842)
+    cover.insert_textbox(fitz.Rect(60, 250, 535, 290), "Galerie Weiss", fontname="tibo", fontsize=20, align=1)
+    cover.insert_textbox(fitz.Rect(60, 300, 535, 330), "ELENA MARCHETTI", fontname="tibo", fontsize=15, align=1)
+    cover.insert_textbox(fitz.Rect(60, 335, 535, 365), "The Slow Return of Light", fontname="tiit", fontsize=11, align=1)
+    for i in range(4):
+        page = doc.new_page(width=595, height=842)
+        # image so the caption page registers as an artwork
+        page.draw_rect(fitz.Rect(80, 60, 515, 420), color=None, fill=(0.4, 0.5, 0.6))
+        img = page.get_pixmap(clip=fitz.Rect(80, 60, 515, 420), dpi=72)
+        page.insert_image(fitz.Rect(80, 60, 515, 420), stream=img.tobytes("png"))
+        page.insert_textbox(fitz.Rect(80, 450, 515, 560),
+                            f"Studio Window {i + 1}, 2026\nOil on linen\n90 x 70 cm\n€ 32,000",
+                            fontname="tiro", fontsize=11)
+    doc.save(str(pdf))
+    doc.close()
+
+    artworks = extract_artworks(str(pdf), str(media))
+    assert len(artworks) == 4
+    for art in artworks:
+        assert art.artist == "Elena Marchetti", f"cover artist should fill caption gaps, got {art.artist!r}"
+        assert "Studio Window" in art.title
+
+
 def test_extract_simple_pdf(tmp_path):
     pdf = tmp_path / "simple.pdf"
     media = tmp_path / "media"

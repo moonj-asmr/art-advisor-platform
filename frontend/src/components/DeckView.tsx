@@ -9,9 +9,10 @@ interface Props {
   onDecided: (artwork: Artwork, decision: 'liked' | 'passed') => void;
   onUndo: (artwork: Artwork) => void;
   likedCount: number;
+  allocation: number[]; // collections a right-swipe allocates into
 }
 
-export const DeckView: React.FC<Props> = ({ pending, onDecided, onUndo, likedCount }) => {
+export const DeckView: React.FC<Props> = ({ pending, onDecided, onUndo, likedCount, allocation }) => {
   const [history, setHistory] = useState<Artwork[]>([]);
   const top = pending[0];
 
@@ -19,7 +20,7 @@ export const DeckView: React.FC<Props> = ({ pending, onDecided, onUndo, likedCou
     setHistory((h) => [...h.slice(-19), artwork]);
     onDecided(artwork, decision); // optimistic
     try {
-      await api.decide(artwork.id, decision);
+      await api.decide(artwork.id, decision, decision === 'liked' ? allocation : []);
     } catch {
       /* optimistic UI; a refresh re-syncs */
     }
@@ -44,7 +45,7 @@ export const DeckView: React.FC<Props> = ({ pending, onDecided, onUndo, likedCou
         <h2 className="text-lg font-semibold text-zinc-900">Deck clear</h2>
         <p className="text-sm text-zinc-500 max-w-xs">
           {likedCount > 0
-            ? `You have ${likedCount} work${likedCount === 1 ? '' : 's'} in your selects — refine them and export a client PDF.`
+            ? `You have ${likedCount} work${likedCount === 1 ? '' : 's'} in your Library — refine them and export a client PDF.`
             : 'Upload a gallery PDF in the Inbox tab and the works will appear here to review.'}
         </p>
         {history.length > 0 && (
