@@ -1,22 +1,18 @@
 import React, { useRef, useState } from 'react';
-import { FileText, Loader2, Plus, Upload } from 'lucide-react';
+import { FileText, Loader2, Upload } from 'lucide-react';
 import { api } from '../lib/api';
-import type { Collection, UploadRecord } from '../types';
+import type { UploadRecord } from '../types';
 
 interface Props {
   uploads: UploadRecord[];
-  collections: Collection[];
-  activeCollection: number | null;
   onUploaded: () => void;
-  onCreateCollection: (name: string) => Promise<void>;
 }
 
-export const InboxView: React.FC<Props> = ({ uploads, collections, activeCollection, onUploaded, onCreateCollection }) => {
+export const InboxView: React.FC<Props> = ({ uploads, onUploaded }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [message, setMessage] = useState('');
-  const [newCollection, setNewCollection] = useState('');
   const [galleryName, setGalleryName] = useState('');
 
   const handleFiles = async (files: FileList | File[]) => {
@@ -27,7 +23,7 @@ export const InboxView: React.FC<Props> = ({ uploads, collections, activeCollect
     for (const file of Array.from(files)) {
       if (!file.name.toLowerCase().endsWith('.pdf')) continue;
       try {
-        const res = await api.uploadPdf(file, activeCollection, galleryName.trim());
+        const res = await api.uploadPdf(file, null, galleryName.trim());
         found += res.artworks_found;
       } catch {
         failed += 1;
@@ -62,7 +58,8 @@ export const InboxView: React.FC<Props> = ({ uploads, collections, activeCollect
             </div>
             <p className="text-sm font-medium text-zinc-900">Drop gallery PDFs here</p>
             <p className="text-xs text-zinc-500 mt-1 max-w-xs">
-              Forwarded from email or WhatsApp — single-page captions or multi-page presentations both work. Up to 50MB.
+              Every PDF lands in your general deck. Choose which collections you're selecting for
+              while you swipe — or allocate later in the Library.
             </p>
             <input
               value={galleryName}
@@ -78,40 +75,6 @@ export const InboxView: React.FC<Props> = ({ uploads, collections, activeCollect
         )}
       </div>
       {message && <p className="text-xs text-emerald-600 mt-3 text-center">{message}</p>}
-
-      {/* collections */}
-      <div className="mt-6">
-        <h3 className="text-sm font-semibold text-zinc-900 mb-2">Collections</h3>
-        <p className="text-xs text-zinc-500 mb-3">
-          Group uploads by fair or season — Art Basel, Spring shows — and review each deck separately. New uploads land in the collection selected above.
-        </p>
-        <div className="flex gap-2">
-          <input
-            value={newCollection}
-            onChange={(e) => setNewCollection(e.target.value)}
-            placeholder="e.g. Art Basel 2026"
-            className="flex-1 bg-white border border-zinc-300 rounded-lg px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:border-zinc-500"
-          />
-          <button
-            onClick={async () => { if (newCollection.trim()) { await onCreateCollection(newCollection.trim()); setNewCollection(''); } }}
-            className="px-3 rounded-lg bg-zinc-100 border border-zinc-200 text-zinc-700 hover:bg-zinc-200"
-          >
-            <Plus className="w-4 h-4" />
-          </button>
-        </div>
-        <div className="mt-3 space-y-2">
-          {collections.map((c) => (
-            <div key={c.id} className="flex items-center justify-between bg-white border border-zinc-200 rounded-xl px-4 py-3">
-              <div>
-                <div className="text-sm text-zinc-900">{c.name}</div>
-                <div className="text-xs text-zinc-500">
-                  {c.counts.pending} to review · {c.counts.liked} selected
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
 
       {/* processed PDFs */}
       <div className="mt-6">

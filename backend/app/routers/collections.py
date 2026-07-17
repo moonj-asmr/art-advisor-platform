@@ -17,12 +17,12 @@ def list_collections(db: Session = Depends(get_db)):
     out = []
     for c in db.query(Collection).order_by(Collection.created_at.desc()).all():
         counts = {"pending": 0, "liked": 0, "passed": 0}
-        for a in c.artworks:
+        for a in c.members:
             counts[a.status] = counts.get(a.status, 0) + 1
         out.append({
             "id": c.id, "name": c.name,
             "created_at": c.created_at.isoformat() if c.created_at else None,
-            "counts": counts, "total": len(c.artworks),
+            "counts": counts, "total": len(c.members),
         })
     return out
 
@@ -48,6 +48,7 @@ def delete_collection(collection_id: int, db: Session = Depends(get_db)):
         .update({Artwork.collection_id: None})
     for u in c.uploads:
         u.collection_id = None
+    c.members = []
     db.delete(c)
     db.commit()
     return {"deleted": collection_id}

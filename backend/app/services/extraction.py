@@ -206,9 +206,12 @@ def extract_artworks(pdf_path: str, media_dir: str) -> List[ParsedArtwork]:
     doc = fitz.open(pdf_path)
     artworks: List[ParsedArtwork] = []
     current: Optional[ParsedArtwork] = None
+    cover_texts: List[str] = []  # pages before the first artwork — the document's framing
+    page_texts: List[str] = []
 
     for page_index, page in enumerate(doc):
         text = page.get_text("text")
+        page_texts.append(text)
         images = _extract_page_images(doc, page, media_dir)
         score = _caption_score(text)
         word_count = len(text.split())
@@ -239,14 +242,73 @@ def extract_artworks(pdf_path: str, media_dir: str) -> List[ParsedArtwork]:
                     current.pages.append(page_index + 1)
             elif word_count:
                 current.raw_text += "\n" + text.strip()
-        # else: cover/contact page before any artwork — skip.
+        else:
+            # Cover / intro page before any artwork: keep for document context.
+            cover_texts.append(text)
 
     if current:
         artworks.append(current)
     doc.close()
 
-    # Keep only entries that have at least an image or a caption worth showing.
-    return [a for a in artworks if a.image_path or a.title or a.artist]
+    artworks = [a for a in artworks if a.image_path or a.title or a.artist]
+    _apply_document_context(artworks, cover_texts, page_texts)
+    return artworks
+
+
+def _person_name_candidates(text: str) -> List[str]:
+    """Lines that read like a person's name (for solo-show covers/headers)."""
+    out = []
+    for line in text.split("\n"):
+        line = _clean(line)
+        if not line or len(line) > 40 or NOISE_LINE.match(line) or CONTACT_RE.search(line):
+            continue
+        if GALLERY_WORD.search(line) or PRICE_RE.search(line) or DIMENSIONS_RE.search(line):
+            continue
+        if MEDIUM_WORDS.search(line) or YEAR_RE.search(line):
+            continue
+        stripped = re.sub(r"\s*\(b\.\s*\d{4}.*?\)", "", line)
+        if re.search(r"\d", stripped):
+            continue
+        words = stripped.split()
+        if not (2 <= len(words) <= 4):
+            continue
+        # exhibition titles tend to carry articles/prepositions; names don't
+        if any(w.lower() in ("a", "an", "the", "of", "and", "on", "in", "with", "at", "for", "from") for w in words):
+            continue
+        if all(w[:1].isupper() or w.isupper() for w in words if w[:1].isalpha()):
+            out.append(stripped.title() if stripped.isupper() else stripped)
+    return out
+
+
+def _apply_document_context(artworks: List[ParsedArtwork], cover_texts: List[str], page_texts: List[str]):
+    """Solo presentations name the artist once — on the cover or in running
+    headers/bio pages — rather than in every caption. If most captions came
+    back without an artist, look for that document-level name and fill it in."""
+    if not artworks:
+        return
+    missing = [a for a in artworks if not a.artist]
+    if len(missing) < max(1, len(artworks) / 2):
+        return
+
+    # 1) a name repeated across several pages (running header, bio pages)
+    from collections import Counter
+
+    counter: Counter = Counter()
+    for text in page_texts:
+        for name in set(_person_name_candidates(text)):
+            counter[name] += 1
+    repeated = [n for n, c in counter.most_common(5) if c >= max(2, len(page_texts) // 3)]
+
+    # 2) else, a name on the cover pages
+    cover_names = []
+    for text in cover_texts:
+        cover_names.extend(_person_name_candidates(text))
+
+    artist = repeated[0] if repeated else (cover_names[0] if cover_names else "")
+    if not artist:
+        return
+    for a in missing:
+        a.artist = artist
 
 
 def _is_contact_page(text: str) -> bool:

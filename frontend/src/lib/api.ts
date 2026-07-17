@@ -18,12 +18,26 @@ export const api = {
     return fetch(`${BASE}/api/artworks?${q}`).then((r) => json<Artwork[]>(r));
   },
 
-  decide: (id: number, decision: 'liked' | 'passed' | 'pending') =>
+  decide: (id: number, decision: 'liked' | 'passed' | 'pending', collectionIds: number[] = []) =>
     fetch(`${BASE}/api/artworks/${id}/decision`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ decision }),
+      body: JSON.stringify({ decision, collection_ids: collectionIds }),
     }).then((r) => json<Artwork>(r)),
+
+  bulkCollections: (artworkIds: number[], collectionId: number, action: 'add' | 'remove') =>
+    fetch(`${BASE}/api/artworks/bulk/collections`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ artwork_ids: artworkIds, collection_id: collectionId, action }),
+    }).then((r) => json(r)),
+
+  bulkStatus: (artworkIds: number[], status: 'liked' | 'passed' | 'pending') =>
+    fetch(`${BASE}/api/artworks/bulk/status`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ artwork_ids: artworkIds, status }),
+    }).then((r) => json(r)),
 
   updateArtwork: (id: number, patch: Partial<Artwork>) =>
     fetch(`${BASE}/api/artworks/${id}`, {

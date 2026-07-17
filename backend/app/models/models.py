@@ -1,13 +1,22 @@
 from datetime import datetime
 
-from sqlalchemy import JSON, Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, Column, DateTime, ForeignKey, Integer, String, Table, Text
 from sqlalchemy.orm import relationship
 
 from .database import Base
 
+# An artwork can live in many collections at once — the Basel pool, plus a
+# refined shortlist for one client. Membership is the allocation.
+artwork_collection = Table(
+    "artwork_collections",
+    Base.metadata,
+    Column("artwork_id", Integer, ForeignKey("artworks.id", ondelete="CASCADE"), primary_key=True),
+    Column("collection_id", Integer, ForeignKey("collections.id", ondelete="CASCADE"), primary_key=True),
+)
+
 
 class Collection(Base):
-    """A grouping the advisor reviews against: an art fair, a season, a gallery mailing."""
+    """A grouping the advisor allocates into: an art fair, a season, a client shortlist."""
 
     __tablename__ = "collections"
 
@@ -17,6 +26,7 @@ class Collection(Base):
 
     uploads = relationship("Upload", back_populates="collection")
     artworks = relationship("Artwork", back_populates="collection")
+    members = relationship("Artwork", secondary=artwork_collection, back_populates="collections")
 
 
 class Upload(Base):
@@ -65,6 +75,7 @@ class Artwork(Base):
 
     upload = relationship("Upload", back_populates="artworks")
     collection = relationship("Collection", back_populates="artworks")
+    collections = relationship("Collection", secondary=artwork_collection, back_populates="members")
 
     def to_dict(self):
         return {
@@ -85,4 +96,5 @@ class Artwork(Base):
             "pages": self.pages or [],
             "status": self.status,
             "position": self.position,
+            "collection_ids": [c.id for c in self.collections],
         }
