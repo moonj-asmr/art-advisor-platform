@@ -1,0 +1,106 @@
+import io
+import os
+import sys
+import tempfile
+
+os.environ["ART_ADVISOR_DATA"] = tempfile.mkdtemp(prefix="artadvisor-test-")
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "scripts"))
+
+import fitz
+import pytest
+from fastapi.testclient import TestClient
+
+from app.main import app
+from make_sample_pdfs import make_complex, make_simple
+
+client = TestClient(app)
+
+
+@pytest.fixture(scope="module")
+def uploaded():
+    with tempfile.TemporaryDirectory() as d:
+        simple = os.path.join(d, "halcyon.pdf")
+        make_simple(simple)
+        with open(simple, "rb") as f:
+            r = client.post("/api/uploads", files={"file": ("halcyon-spring.pdf", f, "application/pdf")})
+        assert r.status_code == 200, r.text
+        return r.json()
+
+
+def test_upload_extracts_artworks(uploaded):
+    assert uploaded["artworks_found"] == 6
+    assert uploaded["page_count"] == 7
+
+
+def test_deck_and_swipe_flow(uploaded):
+    pending = client.get("/api/artworks", params={"status": "pending"}).json()
+    assert len(pending) >= 6
+    first, second = pending[0], pending[1]
+
+    r = client.post(f"/api/artworks/{first['id']}/decision", json={"decision": "liked"})
+    assert r.json()["status"] == "liked"
+    r = client.post(f"/api/artworks/{second['id']}/decision", json={"decision": "passed"})
+    assert r.json()["status"] == "passed"
+
+    liked = client.get("/api/artworks", params={"status": "liked"}).json()
+    assert any(a["id"] == first["id"] for a in liked)
+
+    # undo
+    r = client.post(f"/api/artworks/{second['id']}/decision", json={"decision": "pending"})
+    assert r.json()["status"] == "pending"
+
+
+def test_edit_extracted_fields(uploaded):
+    art = client.get("/api/artworks").json()[0]
+    r = client.patch(f"/api/artworks/{art['id']}", json={"price": "$ 99,000", "artist": "Edited Artist"})
+    assert r.status_code == 200
+    assert r.json()["price"] == "$ 99,000"
+    assert r.json()["artist"] == "Edited Artist"
+
+
+def test_collections():
+    r = client.post("/api/collections", json={"name": "Art Basel 2026"})
+    assert r.status_code == 200
+    cid = r.json()["id"]
+    listed = client.get("/api/collections").json()
+    assert any(c["id"] == cid for c in listed)
+
+
+def test_media_served(uploaded):
+    art = client.get("/api/artworks").json()[0]
+    assert art["image_url"]
+    r = client.get(art["image_url"])
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("image/")
+
+
+def test_export_pdf(uploaded):
+    liked = client.get("/api/artworks").json()[:3]
+    ids = [a["id"] for a in liked]
+    r = client.post("/api/export", json={
+        "artwork_ids": ids,
+        "title": "Spring Selections",
+        "client_name": "Alice Chen",
+        "advisor_name": "Britt Art Advisory",
+        "align": "left",
+        "show_price": True,
+        "notes": {str(ids[0]): "Strong early work — museum interest in this series."},
+    })
+    assert r.status_code == 200
+    assert r.headers["content-type"] == "application/pdf"
+    doc = fitz.open(stream=r.content, filetype="pdf")
+    # cover + one page per artwork
+    assert doc.page_count == 1 + len(ids)
+    cover_text = doc[0].get_text()
+    assert "Spring Selections" in cover_text
+    assert "Alice Chen" in cover_text
+    page1 = doc[1].get_text()
+    assert "museum interest" in page1
+    assert liked[0]["artist"] in page1, "caption lines must not be silently dropped"
+    assert liked[0]["price"] in page1
+    doc.close()
+
+
+def test_export_requires_ids():
+    r = client.post("/api/export", json={"artwork_ids": []})
+    assert r.status_code == 400
