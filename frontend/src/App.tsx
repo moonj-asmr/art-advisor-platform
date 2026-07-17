@@ -92,15 +92,15 @@ function App() {
       {/* header: app name + (on deck) where right-swipes are going */}
       <header className="px-4" style={{ paddingTop: 'max(env(safe-area-inset-top), 1rem)' }}>
         {/* fixed-height row so the wordmark sits identically on every tab */}
-        <div className="h-9 flex items-center justify-between gap-3">
-          <h1 className="font-semibold tracking-tight text-lg leading-none">Advisory<span className="text-zinc-400">Deck</span></h1>
+        <div className="h-10 flex items-center justify-between gap-3">
+          <h1 className="font-semibold tracking-tight text-lg leading-none text-blue-900">Advisory<span className="text-blue-500">Deck</span></h1>
           {tab === 'deck' && (
             <button
               onClick={() => setPickingAllocation(true)}
-              className="flex items-center gap-1 bg-zinc-100 border border-zinc-200 text-zinc-600 text-xs rounded-full pl-3 pr-2 py-1.5 max-w-[58%]"
+              className="flex items-center gap-1.5 bg-zinc-100 border border-zinc-200 text-zinc-600 text-sm rounded-full pl-4 pr-2.5 py-2 max-w-[58%]"
             >
               <span className="truncate">Selecting for: <span className="text-zinc-900 font-medium">{allocationLabel}</span></span>
-              <ChevronDown className="w-3.5 h-3.5 shrink-0" />
+              <ChevronDown className="w-4 h-4 shrink-0" />
             </button>
           )}
         </div>

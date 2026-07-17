@@ -86,7 +86,7 @@ export const api = {
     if (collectionId != null) form.append('collection_id', String(collectionId));
     if (gallery) form.append('gallery', gallery);
     return fetch(`${BASE}/api/uploads`, { method: 'POST', body: form }).then((r) =>
-      json<{ upload_id: number; artworks_found: number; gallery: string }>(r),
+      json<{ upload_id: number; artworks_found: number; gallery: string; engine: 'ai' | 'basic' }>(r),
     );
   },
 

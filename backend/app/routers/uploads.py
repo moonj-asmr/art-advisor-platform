@@ -5,9 +5,14 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+import logging
+
 from ..models.database import MEDIA_DIR, get_db
 from ..models.models import Artwork, Collection, Upload
 from ..services.extraction import extract_artworks, guess_gallery_name
+from ..services.llm_extraction import ai_available, extract_artworks_ai
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/uploads", tags=["uploads"])
 
@@ -35,8 +40,20 @@ async def upload_pdf(
         tmp.write(content)
         tmp_path = tmp.name
     try:
-        parsed = extract_artworks(tmp_path, MEDIA_DIR)
-        gallery_name = gallery.strip() or guess_gallery_name(tmp_path, fallback_name=file.filename)
+        parsed = None
+        gallery_name = ""
+        engine = "basic"
+        if ai_available():
+            try:
+                parsed, ai_gallery = extract_artworks_ai(tmp_path, MEDIA_DIR, original_filename=file.filename or "")
+                gallery_name = gallery.strip() or ai_gallery
+                engine = "ai"
+            except Exception:
+                logger.exception("AI extraction failed; falling back to heuristics")
+                parsed = None
+        if parsed is None:
+            parsed = extract_artworks(tmp_path, MEDIA_DIR)
+            gallery_name = gallery.strip() or guess_gallery_name(tmp_path, fallback_name=file.filename)
         import fitz
 
         with fitz.open(tmp_path) as d:
@@ -81,6 +98,7 @@ async def upload_pdf(
         "gallery": gallery_name,
         "page_count": page_count,
         "artworks_found": len(parsed),
+        "engine": engine,
     }
 
 

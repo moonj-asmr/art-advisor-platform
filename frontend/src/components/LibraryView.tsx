@@ -54,12 +54,19 @@ export const LibraryView: React.FC<Props> = ({
     if (filter !== 'all' && !collections.some((c) => c.id === filter)) setFilter('all');
   }, [collections, filter]);
 
+  // top controls and the nav hide together on scroll-down, jog back on scroll-up
+  const [controlsVisible, setControlsVisible] = useState(true);
   const onScroll = (e: React.UIEvent<HTMLDivElement>) => {
     if (actionBarOpen) return;
     const y = e.currentTarget.scrollTop;
-    if (y < 24) onNavVisible(true);
-    else if (y - lastY.current > 6) onNavVisible(false);
-    else if (lastY.current - y > 6) onNavVisible(true);
+    let visible: boolean | null = null;
+    if (y < 24) visible = true;
+    else if (y - lastY.current > 6) visible = false;
+    else if (lastY.current - y > 6) visible = true;
+    if (visible !== null) {
+      onNavVisible(visible);
+      setControlsVisible(visible);
+    }
     lastY.current = y;
   };
 
@@ -116,19 +123,24 @@ export const LibraryView: React.FC<Props> = ({
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
-      {/* controls */}
-      <div className="px-4 pt-1 pb-2 space-y-2">
+      {/* controls — hide on scroll-down, reappear on scroll-up */}
+      <div
+        className={`px-4 space-y-2 transition-all duration-300 overflow-hidden ${
+          controlsVisible ? 'max-h-40 opacity-100 pt-1 pb-2' : 'max-h-0 opacity-0 pt-0 pb-0'
+        }`}
+      >
         <div className="flex items-center gap-2">
-          {/* segment control */}
+          {/* segment control — Passed on the left, Selected on the right,
+              matching swipe-left / swipe-right */}
           <div className="flex bg-zinc-100 rounded-full p-0.5 text-sm">
             {([
-              ['liked', `Selected ${likedCount}`],
               ['passed', `Passed ${passedCount}`],
+              ['liked', `Selected ${likedCount}`],
             ] as const).map(([key, label]) => (
               <button
                 key={key}
                 onClick={() => { setSegment(key); exitSelect(); }}
-                className={`px-3.5 py-1.5 rounded-full ${segment === key ? 'bg-white shadow text-zinc-900 font-medium' : 'text-zinc-500'}`}
+                className={`px-4 py-2 rounded-full ${segment === key ? 'bg-white shadow text-zinc-900 font-medium' : 'text-zinc-500'}`}
               >
                 {label}
               </button>
@@ -137,7 +149,7 @@ export const LibraryView: React.FC<Props> = ({
           <div className="flex-1" />
           <button
             onClick={() => (selectMode ? exitSelect() : setSelectMode(true))}
-            className={`text-sm rounded-full px-3.5 py-1.5 border ${selectMode ? 'bg-zinc-900 text-white border-zinc-900' : 'border-zinc-300 text-zinc-600'}`}
+            className={`text-sm rounded-full px-4 py-2 border ${selectMode ? 'bg-zinc-900 text-white border-zinc-900' : 'border-zinc-300 text-zinc-600'}`}
           >
             {selectMode ? 'Done' : 'Select'}
           </button>
@@ -146,7 +158,7 @@ export const LibraryView: React.FC<Props> = ({
           <select
             value={filter === 'all' ? '' : filter}
             onChange={(e) => setFilter(e.target.value ? Number(e.target.value) : 'all')}
-            className="bg-zinc-100 border border-zinc-200 text-zinc-600 text-xs rounded-full px-3 py-1.5 focus:outline-none max-w-[52%]"
+            className="bg-zinc-100 border border-zinc-200 text-zinc-600 text-sm rounded-full px-4 py-2 focus:outline-none max-w-[52%]"
           >
             <option value="">All collections</option>
             {collections.map((c) => (
@@ -156,17 +168,17 @@ export const LibraryView: React.FC<Props> = ({
           <button
             title="Manage collections"
             onClick={() => setManaging(true)}
-            className="p-1.5 rounded-full bg-zinc-100 border border-zinc-200 text-zinc-500 hover:text-zinc-900"
+            className="p-2.5 rounded-full bg-zinc-100 border border-zinc-200 text-zinc-500 hover:text-zinc-900"
           >
-            <FolderCog className="w-3.5 h-3.5" />
+            <FolderCog className="w-4 h-4" />
           </button>
           <div className="flex-1" />
           {segment === 'liked' && shown.length > 0 && !selectMode && (
             <button
               onClick={() => setExporting(true)}
-              className="flex items-center gap-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-full px-3.5 py-2 hover:bg-emerald-500"
+              className="flex items-center gap-1.5 bg-emerald-600 text-white text-sm font-semibold rounded-full px-4 py-2 hover:bg-emerald-500"
             >
-              <FileDown className="w-3.5 h-3.5" />
+              <FileDown className="w-4 h-4" />
               Export {filter !== 'all' ? collectionName(filter) : 'PDF'}
             </button>
           )}
