@@ -58,11 +58,13 @@ class Settings(Base):
     advisory_name = Column(String, default="")
     advisory_address = Column(Text, default="")
     logo_media = Column(String, default="")
-    align = Column(String, default="left")
+    align = Column(String, default="left")  # legacy left|center — align_x supersedes it
+    align_x = Column(Float, default=0.0)  # caption position 0 (left) .. 0.5 (center) .. 1 (right)
     font = Column(String, default="serif")  # a pdf_builder.FONT_FAMILIES key
     accent_hex = Column(String, default="#1a1a1a")
     background_hex = Column(String, default="#ffffff")
     text_hex = Column(String, default="#262626")
+    price_hex = Column(String, default="")  # empty = follow the caption color (quiet by default)
     base_font_pt = Column(Float, default=10.0)
     heading_font_pt = Column(Float, default=13.0)
     image_scale = Column(Float, default=1.0)
@@ -77,10 +79,12 @@ class Settings(Base):
             "logo_media": self.logo_media,
             "logo_url": f"/media/{self.logo_media}" if self.logo_media else None,
             "align": self.align,
+            "align_x": self.align_x,
             "font": self.font,
             "accent_hex": self.accent_hex,
             "background_hex": self.background_hex,
             "text_hex": self.text_hex,
+            "price_hex": self.price_hex,
             "base_font_pt": self.base_font_pt,
             "heading_font_pt": self.heading_font_pt,
             "image_scale": self.image_scale,

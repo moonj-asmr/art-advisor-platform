@@ -31,11 +31,13 @@ class SettingsPatch(BaseModel):
     email: str | None = None
     advisory_name: str | None = None
     advisory_address: str | None = None
-    align: str | None = None
+    align: str | None = None  # legacy — align_x supersedes it
+    align_x: float | None = None
     font: str | None = None
     accent_hex: str | None = None
     background_hex: str | None = None
     text_hex: str | None = None
+    price_hex: str | None = None
     base_font_pt: float | None = None
     heading_font_pt: float | None = None
     image_scale: float | None = None
@@ -47,18 +49,20 @@ FONT_KEYS = list(FONT_FAMILIES.keys())
 STYLE_SCHEMA = {
     "type": "object",
     "properties": {
-        "align": {"type": "string", "enum": ["left", "center"]},
+        "align_x": {"type": "number",
+                    "description": "caption position across the page: 0 left, 0.5 centered, 1 right, anything between allowed"},
         "font": {"type": "string", "enum": FONT_KEYS},
         "image_scale": {"type": "number", "description": "0.6 (intimate) to 1.25 (large)"},
-        "accent_hex": {"type": "string", "description": "hex color for artist names, prices, cover title"},
+        "accent_hex": {"type": "string", "description": "hex color for artist names and the cover title"},
         "background_hex": {"type": "string", "description": "hex page background color, #ffffff for plain white"},
         "text_hex": {"type": "string", "description": "hex color of the caption body text"},
+        "price_hex": {"type": "string", "description": "hex color of the price line; empty string to match the caption color"},
         "base_font_pt": {"type": "number", "description": "caption body size in points, 8 to 16"},
         "heading_font_pt": {"type": "number", "description": "artist-name size in points, 10 to 24"},
         "summary": {"type": "string", "description": "one plain sentence telling the advisor what was applied"},
     },
-    "required": ["align", "font", "image_scale", "accent_hex", "background_hex",
-                 "text_hex", "base_font_pt", "heading_font_pt", "summary"],
+    "required": ["align_x", "font", "image_scale", "accent_hex", "background_hex",
+                 "text_hex", "price_hex", "base_font_pt", "heading_font_pt", "summary"],
     "additionalProperties": False,
 }
 
@@ -75,22 +79,24 @@ def _apply_style_request(row: Settings, request_text: str) -> str:
 
     client = anthropic.Anthropic(timeout=60.0, max_retries=1)
     font_menu = ", ".join(f"{k} ({v['label']})" for k, v in FONT_FAMILIES.items())
-    current = (f"align={row.align}, font={row.font}, image_scale={row.image_scale}, "
+    current = (f"align_x={row.align_x}, font={row.font}, image_scale={row.image_scale}, "
                f"accent_hex={row.accent_hex}, background_hex={row.background_hex}, "
-               f"text_hex={row.text_hex}, base_font_pt={row.base_font_pt}, "
-               f"heading_font_pt={row.heading_font_pt}")
+               f"text_hex={row.text_hex}, price_hex={row.price_hex or '(matches caption)'}, "
+               f"base_font_pt={row.base_font_pt}, heading_font_pt={row.heading_font_pt}")
     response = client.messages.create(
         model=os.environ.get("ANTHROPIC_MODEL", "claude-opus-4-8"),
         max_tokens=2000,
         thinking={"type": "adaptive"},
         system=(
             "You configure the layout of an art advisor's client-facing PDF. "
-            "Dials you can set: align (left|center); font — one of: " + font_menu + "; "
+            "Dials you can set: align_x (caption position across the page: 0 left, "
+            "0.5 centered, 1 right, in-between values allowed); font — one of: " + font_menu + "; "
             "image_scale (0.6 small/intimate images to 1.25 large); accent_hex "
-            "(artist names, prices, cover title); background_hex (whole-page "
+            "(artist names and cover title); background_hex (whole-page "
             "background — e.g. a light green request means something like #e8f2e8, "
             "keep backgrounds pale enough that text stays readable); text_hex "
-            "(caption body color); base_font_pt (body text size, 8-16); "
+            "(caption body color); price_hex (the price line; empty string means it "
+            "matches the caption color); base_font_pt (body text size, 8-16); "
             "heading_font_pt (artist-name size, 10-24). Apply the advisor's request "
             "literally where a dial exists for it; keep every dial they did not "
             "mention at its current value. If part of the request has no dial, "
@@ -105,12 +111,13 @@ def _apply_style_request(row: Settings, request_text: str) -> str:
     if response.stop_reason == "refusal":
         raise RuntimeError("declined")
     data = json.loads(next(b.text for b in response.content if b.type == "text"))
-    row.align = data["align"] if data["align"] in ("left", "center") else row.align
+    row.align_x = min(1.0, max(0.0, float(data["align_x"])))
     row.font = data["font"] if data["font"] in FONT_FAMILIES else row.font
     row.image_scale = min(1.25, max(0.5, float(data["image_scale"])))
     row.accent_hex = _clamp_hex(data["accent_hex"], row.accent_hex)
     row.background_hex = _clamp_hex(data["background_hex"], row.background_hex)
     row.text_hex = _clamp_hex(data["text_hex"], row.text_hex)
+    row.price_hex = "" if not data["price_hex"] else _clamp_hex(data["price_hex"], row.price_hex)
     row.base_font_pt = min(16.0, max(8.0, float(data["base_font_pt"])))
     row.heading_font_pt = min(24.0, max(10.0, float(data["heading_font_pt"])))
     return data.get("summary", "Style updated.")
@@ -176,12 +183,13 @@ def save_settings(body: SettingsPatch, db: Session = Depends(get_db)):
 class DialsBody(BaseModel):
     """The dials as currently shown on screen — possibly unsaved."""
 
-    align: str | None = None
+    align_x: float | None = None
     font: str | None = None
     image_scale: float | None = None
     accent_hex: str | None = None
     background_hex: str | None = None
     text_hex: str | None = None
+    price_hex: str | None = None
     base_font_pt: float | None = None
     heading_font_pt: float | None = None
 
@@ -190,8 +198,8 @@ class StyleRequestBody(DialsBody):
     style_request: str
 
 
-DIAL_FIELDS = ("align", "font", "image_scale", "accent_hex", "background_hex",
-               "text_hex", "base_font_pt", "heading_font_pt")
+DIAL_FIELDS = ("align_x", "font", "image_scale", "accent_hex", "background_hex",
+               "text_hex", "price_hex", "base_font_pt", "heading_font_pt")
 
 
 @router.post("/style-request")
@@ -277,19 +285,19 @@ def _build_preview_bytes(db: Session, overrides: dict | None = None) -> bytes:
         if os.path.exists(candidate):
             logo_path = candidate
 
-    align = dial("align")
     font = dial("font")
     style = StyleOptions(
         title="Style Preview",
         client_name="Sample Client",
         advisor_name=row.advisory_name,
         advisor_address=row.advisory_address,
-        align=align if align in ("left", "center") else "left",
+        align_x=dial("align_x") or 0.0,
         image_scale=dial("image_scale") or 1.0,
         font=font if font in FONT_FAMILIES else "serif",
         accent_hex=dial("accent_hex") or "#1a1a1a",
         background_hex=dial("background_hex") or "#ffffff",
         text_hex=dial("text_hex") or "#262626",
+        price_hex=dial("price_hex") or "",
         base_font_pt=dial("base_font_pt") or 10.0,
         heading_font_pt=dial("heading_font_pt") or 13.0,
         logo_path=logo_path,

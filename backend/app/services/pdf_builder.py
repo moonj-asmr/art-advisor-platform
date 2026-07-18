@@ -36,15 +36,16 @@ class StyleOptions:
     client_name: str = ""          # e.g. "Prepared for Alice Chen"
     advisor_name: str = ""         # footer credit
     advisor_address: str = ""      # printed under the advisory name on the cover
-    align: str = "left"            # left | center
+    align_x: float = 0.0           # caption position: 0 left .. 0.5 center .. 1 right
     image_scale: float = 1.0       # 0.6 (intimate) .. 1.2 (full-bleed-ish)
     show_price: bool = True
     show_gallery: bool = True
     show_description: bool = False
     font: str = "serif"            # a FONT_FAMILIES key
-    accent_hex: str = "#1a1a1a"    # artist names, prices, cover title
+    accent_hex: str = "#1a1a1a"    # artist names and cover title
     background_hex: str = "#ffffff"  # page background
     text_hex: str = "#262626"      # body caption text
+    price_hex: str = ""            # empty = follow text_hex (quiet by default)
     base_font_pt: float = 10.0     # caption body size; everything scales from it
     heading_font_pt: float = 13.0  # artist-name size
     logo_path: Optional[str] = None
@@ -87,11 +88,20 @@ def build_pdf(artworks: List[dict], media_dir: str, style: StyleOptions) -> byte
     # secondary text: body color eased toward the background so it stays
     # legible whatever page color the advisor picked
     grey = tuple(b * 0.62 + g * 0.38 for b, g in zip(body, bg))
+    price_color = _hex_to_rgb(style.price_hex, fallback=body) if style.price_hex else body
     faces = _Faces(style.font)
     base = max(7.0, min(float(style.base_font_pt or 10.0), 16.0))
     heading = max(base, min(float(style.heading_font_pt or base * 1.3), 26.0))
     margin = 56.0
-    centered = style.align == "center"
+    # continuous caption position: the caption box slides across the page and
+    # the text inside aligns toward the nearest anchor
+    ax = max(0.0, min(float(style.align_x or 0.0), 1.0))
+    if ax < 0.4:
+        caption_align = fitz.TEXT_ALIGN_LEFT
+    elif ax <= 0.6:
+        caption_align = fitz.TEXT_ALIGN_CENTER
+    else:
+        caption_align = fitz.TEXT_ALIGN_RIGHT
 
     def paint_background(page):
         if bg != (1, 1, 1):
@@ -133,7 +143,7 @@ def build_pdf(artworks: List[dict], media_dir: str, style: StyleOptions) -> byte
     for art in artworks:
         page = doc.new_page(width=PAGE_W, height=PAGE_H)
         paint_background(page)
-        text_align = fitz.TEXT_ALIGN_CENTER if centered else fitz.TEXT_ALIGN_LEFT
+        text_align = caption_align
 
         header_h = 0.0
         if style.logo_path and os.path.exists(style.logo_path):
@@ -159,7 +169,6 @@ def build_pdf(artworks: List[dict], media_dir: str, style: StyleOptions) -> byte
                 pix = fitz.Pixmap(img_file)
                 scale = min(img_rect.width / pix.width, img_rect.height / pix.height)
                 drawn_h = pix.height * scale
-                drawn_bottom = img_top + (img_rect.height + drawn_h) / 2 if centered else img_top + drawn_h
                 # insert_image centers within rect; bottom of drawn image:
                 drawn_bottom = img_top + (img_rect.height - drawn_h) / 2 + drawn_h
                 pix = None
@@ -168,9 +177,13 @@ def build_pdf(artworks: List[dict], media_dir: str, style: StyleOptions) -> byte
         else:
             drawn_bottom = img_top + 40
 
-        # ---- caption block ----
+        # ---- caption block — slides with align_x; in-between positions sit
+        # proportionally between the margins ----
         y = drawn_bottom + 28
-        x0, x1 = margin, PAGE_W - margin
+        usable = PAGE_W - 2 * margin
+        box_w = usable * 0.8
+        x0 = margin + (usable - box_w) * ax
+        x1 = x0 + box_w
 
         def line(txt, face, size, color, dy=None):
             nonlocal y
@@ -197,7 +210,7 @@ def build_pdf(artworks: List[dict], media_dir: str, style: StyleOptions) -> byte
             line(art["gallery"], faces.reg, base, body, base + 5)
         if style.show_price and art.get("price"):
             y += 4
-            line(art["price"], faces.bold, base * 1.1, accent, base * 1.1 + 6)
+            line(art["price"], faces.bold, base * 1.1, price_color, base * 1.1 + 6)
 
         note = (style.notes or {}).get(str(art.get("id")))
         if note:

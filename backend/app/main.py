@@ -49,12 +49,22 @@ def _migrate_style_dials_and_collection_usage():
         "ALTER TABLE settings ADD COLUMN base_font_pt FLOAT DEFAULT 10.0",
         "ALTER TABLE settings ADD COLUMN heading_font_pt FLOAT DEFAULT 13.0",
         "ALTER TABLE collections ADD COLUMN last_added_at DATETIME",
+        "ALTER TABLE settings ADD COLUMN price_hex VARCHAR DEFAULT ''",
     ):
         try:
             with engine.begin() as conn:
                 conn.execute(text(ddl))
         except Exception:
             pass  # column already exists
+
+    # align_x supersedes the legacy left|center string; backfill only on the
+    # boot that creates the column, so later slider positions are never reset
+    try:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE settings ADD COLUMN align_x FLOAT DEFAULT 0.0"))
+            conn.execute(text("UPDATE settings SET align_x = CASE WHEN align = 'center' THEN 0.5 ELSE 0.0 END"))
+    except Exception:
+        pass
 
 
 _migrate_style_dials_and_collection_usage()

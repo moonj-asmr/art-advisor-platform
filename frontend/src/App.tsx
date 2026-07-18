@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ChevronDown, Heart, Inbox, Layers, Settings } from 'lucide-react';
+import { Heart, Inbox, Layers, Plus, Settings, X } from 'lucide-react';
 import { api } from './lib/api';
 import type { Artwork, Collection, UploadRecord } from './types';
 import { CollectionPicker } from './components/CollectionPicker';
@@ -103,13 +103,10 @@ function App() {
     await reload();
   };
 
-  const allocationLabel =
-    allocation.length === 0
-      ? 'General'
-      : collections
-          .filter((c) => allocation.includes(c.id))
-          .map((c) => c.name)
-          .join(', ');
+  const allocationLabel = collections
+    .filter((c) => allocation.includes(c.id))
+    .map((c) => c.name)
+    .join(', ');
 
   return (
     <div className="h-full bg-white text-zinc-900 flex flex-col max-w-md mx-auto sm:border-x sm:border-zinc-200 relative overflow-hidden">
@@ -118,14 +115,30 @@ function App() {
         {/* fixed-height row so the wordmark sits identically on every tab */}
         <div className="h-10 flex items-center justify-between gap-3">
           <h1 className="font-serif font-semibold tracking-tight text-xl leading-none text-zinc-950">Advisory<span className="text-blue-900">Deck</span></h1>
+          {/* the chip only speaks when a collection is active — by default a
+              right-swipe is just a Select, so there's nothing to say */}
           {tab === 'deck' && (
-            <button
-              onClick={() => setPickingAllocation(true)}
-              className="flex items-center gap-1.5 bg-zinc-100 border border-zinc-200 text-zinc-600 text-sm rounded-full pl-4 pr-2.5 py-2 max-w-[58%]"
-            >
-              <span className="truncate">Selecting for: <span className="text-zinc-900 font-medium">{allocationLabel}</span></span>
-              <ChevronDown className="w-4 h-4 shrink-0" />
-            </button>
+            allocation.length === 0 ? (
+              <button
+                onClick={() => setPickingAllocation(true)}
+                className="flex items-center gap-1 bg-zinc-100 border border-zinc-200 text-zinc-600 text-sm rounded-full px-3.5 py-2"
+              >
+                <Plus className="w-4 h-4" /> Collection
+              </button>
+            ) : (
+              <div className="flex items-center gap-0.5 bg-zinc-900 text-white text-sm rounded-full pl-4 pr-1 py-1 max-w-[58%]">
+                <button onClick={() => setPickingAllocation(true)} className="truncate py-1 font-medium">
+                  → {allocationLabel}
+                </button>
+                <button
+                  aria-label="Clear collection"
+                  onClick={() => setAllocation([])}
+                  className="p-1.5 rounded-full text-zinc-400 hover:text-white shrink-0"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )
           )}
           {/* settings lives with the app's housekeeping — the Inbox */}
           {tab === 'inbox' && (
@@ -213,8 +226,8 @@ function App() {
 
       {pickingAllocation && (
         <CollectionPicker
-          title="Selecting for…"
-          subtitle="Right-swipes are allocated into the ticked collections — or into General, your unfiled selection. You can always re-allocate later in the Library."
+          title="Collection"
+          subtitle="Right-swipes always go into your Selects — tick collections to also file them there. You can re-file later in the Library."
           collections={collections}
           selected={allocation}
           includeGeneral
