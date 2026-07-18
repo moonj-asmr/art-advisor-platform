@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Check, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Check, Pencil, Plus } from 'lucide-react';
 import type { Collection } from '../types';
 import { Sheet } from './Sheet';
 
@@ -55,7 +55,6 @@ export const CollectionPicker: React.FC<Props> = ({
   const [creating, setCreating] = useState(false);
   const [renamingId, setRenamingId] = useState<number | null>(null);
   const [renameValue, setRenameValue] = useState('');
-  const [confirmingDelete, setConfirmingDelete] = useState<number | null>(null);
 
   const toggle = (id: number) =>
     setChosen((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]));
@@ -73,12 +72,6 @@ export const CollectionPicker: React.FC<Props> = ({
     if (renamingId == null || !renameValue.trim()) return;
     await onRename(renamingId, renameValue.trim());
     setRenamingId(null);
-  };
-
-  const confirmDelete = async (id: number) => {
-    await onDelete(id);
-    setChosen((c) => c.filter((x) => x !== id));
-    setConfirmingDelete(null);
   };
 
   return (
@@ -122,23 +115,6 @@ export const CollectionPicker: React.FC<Props> = ({
           )}
           {sorted.map((c) => {
             const on = chosen.includes(c.id);
-            if (confirmingDelete === c.id) {
-              return (
-                <div key={c.id} className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3">
-                  <div className="text-sm text-zinc-900 mb-2">
-                    Delete “{c.name}”? The artworks themselves are kept.
-                  </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => confirmDelete(c.id)} className="px-3 py-1.5 rounded-full bg-rose-500 text-white text-xs font-semibold">
-                      Delete
-                    </button>
-                    <button onClick={() => setConfirmingDelete(null)} className="px-3 py-1.5 rounded-full bg-white border border-zinc-300 text-zinc-600 text-xs">
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              );
-            }
             return (
               <div
                 key={c.id}
@@ -167,19 +143,14 @@ export const CollectionPicker: React.FC<Props> = ({
                         Created {formatDate(c.created_at)} · {c.counts.liked} select{c.counts.liked === 1 ? '' : 's'}
                       </div>
                     </button>
+                    {/* deletion goes through the dots + Delete button, always
+                        with confirmation — no per-row trash to fat-finger */}
                     <button
                       title="Rename"
                       onClick={() => { setRenamingId(c.id); setRenameValue(c.name); }}
-                      className="p-1.5 rounded-md text-zinc-400 hover:text-zinc-900 shrink-0"
+                      className="p-1.5 mr-1 rounded-md text-zinc-400 hover:text-zinc-900 shrink-0"
                     >
                       <Pencil className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      title="Delete collection"
-                      onClick={() => setConfirmingDelete(c.id)}
-                      className="p-1.5 rounded-md text-zinc-400 hover:text-rose-500 shrink-0"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => toggle(c.id)}
