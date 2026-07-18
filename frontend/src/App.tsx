@@ -99,24 +99,25 @@ function App() {
         {/* fixed-height row so the wordmark sits identically on every tab */}
         <div className="h-10 flex items-center justify-between gap-3">
           <h1 className="font-serif font-semibold tracking-tight text-xl leading-none text-zinc-950">Advisory<span className="text-blue-900">Deck</span></h1>
-          {tab === 'deck' && (
-            <button
-              onClick={() => setPickingAllocation(true)}
-              className="flex items-center gap-1.5 bg-zinc-100 border border-zinc-200 text-zinc-600 text-sm rounded-full pl-4 pr-2.5 py-2 max-w-[58%]"
-            >
-              <span className="truncate">Selecting for: <span className="text-zinc-900 font-medium">{allocationLabel}</span></span>
-              <ChevronDown className="w-4 h-4 shrink-0" />
-            </button>
-          )}
-          {tab === 'inbox' && (
+          <div className="flex items-center gap-2 min-w-0">
+            {tab === 'deck' && (
+              <button
+                onClick={() => setPickingAllocation(true)}
+                className="flex items-center gap-1.5 bg-zinc-100 border border-zinc-200 text-zinc-600 text-sm rounded-full pl-4 pr-2.5 py-2 min-w-0"
+              >
+                <span className="truncate">Selecting for: <span className="text-zinc-900 font-medium">{allocationLabel}</span></span>
+                <ChevronDown className="w-4 h-4 shrink-0" />
+              </button>
+            )}
+            {/* settings is reachable from every tab */}
             <button
               aria-label="Settings"
               onClick={() => setShowSettings(true)}
-              className="p-2.5 rounded-full bg-zinc-100 border border-zinc-200 text-zinc-600 hover:text-zinc-900"
+              className="p-2.5 rounded-full bg-zinc-100 border border-zinc-200 text-zinc-600 hover:text-zinc-900 shrink-0"
             >
               <Settings className="w-5 h-5" />
             </button>
-          )}
+          </div>
         </div>
         <div className="h-2" />
       </header>
