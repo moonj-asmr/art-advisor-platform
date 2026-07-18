@@ -148,11 +148,11 @@ function App() {
         )}
       </main>
 
-      {/* permanent bottom nav — low and tight, always visible; the selected
-          tab keeps its black pill state */}
+      {/* permanent bottom nav — hugs the very bottom of the screen; the iOS
+          home indicator overlaps its lower padding so the bar stays tight */}
       <nav
-        className="shrink-0 z-30 bg-white border-t border-zinc-200 flex items-center gap-1 px-3 pt-1.5"
-        style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 0.4rem)' }}
+        className="shrink-0 z-30 bg-white rounded-t-2xl shadow-[0_-4px_16px_rgba(0,0,0,0.07)] flex items-center gap-1 px-3 pt-1"
+        style={{ paddingBottom: 'max(calc(env(safe-area-inset-bottom) - 16px), 0.25rem)' }}
       >
         {([
           ['deck', Layers, 'Deck', pending.length],
@@ -162,7 +162,7 @@ function App() {
           <button
             key={key}
             onClick={() => setTab(key)}
-            className={`relative flex-1 h-[40px] flex items-center justify-center gap-1.5 text-xs rounded-full ${
+            className={`relative flex-1 h-9 flex items-center justify-center gap-1.5 text-xs rounded-full ${
               tab === key ? 'bg-zinc-900 text-white font-medium' : 'text-zinc-500'
             }`}
           >
