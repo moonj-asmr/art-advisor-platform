@@ -34,7 +34,6 @@ export const LibraryView: React.FC<Props> = ({
 }) => {
   const [segment, setSegment] = useState<Segment>('liked');
   const [filter, setFilter] = useState<number | 'all'>('all');
-  const [galleryFilter, setGalleryFilter] = useState<string>('all');
   const [selectMode, setSelectMode] = useState(false);
   const [checked, setChecked] = useState<number[]>([]);
   const [editing, setEditing] = useState<Artwork | null>(null);
@@ -55,16 +54,9 @@ export const LibraryView: React.FC<Props> = ({
   const shown = useMemo(
     () =>
       artworks.filter(
-        (a) =>
-          a.status === segment &&
-          (filter === 'all' || a.collection_ids.includes(filter)) &&
-          (galleryFilter === 'all' || a.gallery === galleryFilter),
+        (a) => a.status === segment && (filter === 'all' || a.collection_ids.includes(filter)),
       ),
-    [artworks, segment, filter, galleryFilter],
-  );
-  const galleries = useMemo(
-    () => Array.from(new Set(artworks.map((a) => a.gallery).filter(Boolean))).sort(),
-    [artworks],
+    [artworks, segment, filter],
   );
   const likedCount = artworks.filter((a) => a.status === 'liked').length;
   const passedCount = artworks.filter((a) => a.status === 'passed').length;
@@ -182,16 +174,7 @@ export const LibraryView: React.FC<Props> = ({
           >
             <FolderCog className="w-4 h-4" />
           </button>
-          <select
-            value={galleryFilter === 'all' ? '' : galleryFilter}
-            onChange={(e) => setGalleryFilter(e.target.value || 'all')}
-            className="flex-1 min-w-0 bg-zinc-100 border border-zinc-200 text-zinc-600 text-sm rounded-full px-3 py-2 focus:outline-none"
-          >
-            <option value="">All galleries</option>
-            {galleries.map((g) => (
-              <option key={g} value={g}>{g}</option>
-            ))}
-          </select>
+          <div className="flex-1" />
           <button
             onClick={() => (selectMode ? exitSelect() : setSelectMode(true))}
             className={`text-sm rounded-full px-4 py-2 border ${selectMode ? 'bg-zinc-900 text-white border-zinc-900' : 'border-zinc-300 text-zinc-600'}`}
@@ -214,14 +197,16 @@ export const LibraryView: React.FC<Props> = ({
               : 'No passed works here. Anything you pass in the deck lands in this list, so nothing is ever lost.'}
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
+          // two staggered columns — cards keep each artwork's true proportions,
+          // never cropping into the work, so heights vary and stack naturally
+          <div className="columns-2 gap-3">
             {shown.map((a) => {
               const isChecked = checked.includes(a.id);
               return (
                 <div
                   key={a.id}
                   onClick={() => (selectMode ? toggleCheck(a.id) : setViewing(a))}
-                  className={`relative bg-white rounded-xl overflow-hidden border ${
+                  className={`relative mb-3 break-inside-avoid bg-white rounded-xl overflow-hidden border ${
                     selectMode && isChecked ? 'border-zinc-900 ring-2 ring-zinc-900' : 'border-zinc-200'
                   }`}
                 >
@@ -234,11 +219,13 @@ export const LibraryView: React.FC<Props> = ({
                       <CheckCircle2 className="w-4 h-4" />
                     </span>
                   )}
-                  <div className="aspect-square bg-zinc-100 flex items-center justify-center">
+                  <div className="bg-zinc-100">
                     {a.image_url ? (
-                      <img src={mediaUrl(a.image_url)} alt={a.title} className="w-full h-full object-cover" />
+                      <img src={mediaUrl(a.image_url)} alt={a.title} className="w-full h-auto" />
                     ) : (
-                      <span className="text-xs text-zinc-400">No image</span>
+                      <div className="aspect-square flex items-center justify-center">
+                        <span className="text-xs text-zinc-400">No image</span>
+                      </div>
                     )}
                   </div>
                   <div className="p-2.5">
