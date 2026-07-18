@@ -152,7 +152,7 @@ function App() {
           the iOS home indicator overlapping the tab pills themselves */}
       <nav
         className="shrink-0 z-30 bg-white rounded-t-2xl shadow-[0_-4px_16px_rgba(0,0,0,0.07)] flex items-center gap-1 px-3 pt-1"
-        style={{ paddingBottom: 'max(calc(env(safe-area-inset-bottom) - 26px), 0.2rem)' }}
+        style={{ paddingBottom: 'max(calc(env(safe-area-inset-bottom) - 30px), 0.15rem)' }}
       >
         {([
           ['deck', Layers, 'Deck', pending.length],

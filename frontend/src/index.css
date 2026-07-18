@@ -3,12 +3,18 @@
 @tailwind utilities;
 
 @layer base {
+  /* Lock the document itself: iOS otherwise rubber-band-scrolls the whole
+     page on a drag, carrying the "fixed" app with it and cutting the nav off
+     at the bottom. With html/body fixed there is nothing for iOS to bounce —
+     only the app's own inner lists scroll. */
   html,
   body {
-    height: 100%;
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: manipulation;
   }
-  /* Pin the app to the visual viewport. h-dvh alone drifts on iOS when the
-     browser chrome shows/hides, leaving the nav floating above the bottom. */
   #root {
     position: fixed;
     inset: 0;
@@ -16,7 +22,6 @@
   }
   body {
     @apply bg-white text-zinc-900 antialiased;
-    overscroll-behavior: none;
     -webkit-tap-highlight-color: transparent;
   }
 }
