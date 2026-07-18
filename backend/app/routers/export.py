@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from ..models.database import MEDIA_DIR, get_db
 from ..models.models import Artwork
-from ..services.pdf_builder import StyleOptions, build_pdf
+from ..services.pdf_builder import FONT_FAMILIES, StyleOptions, build_pdf
 from .settings import get_settings_row
 
 router = APIRouter(prefix="/export", tags=["export"])
@@ -69,8 +69,12 @@ def export_pdf(body: ExportRequest, db: Session = Depends(get_db)):
         show_price=body.show_price,
         show_gallery=body.show_gallery,
         show_description=body.show_description,
-        font=settings.font if settings.font in ("serif", "sans") else "serif",
+        font=settings.font if settings.font in FONT_FAMILIES else "serif",
         accent_hex=settings.accent_hex or "#1a1a1a",
+        background_hex=settings.background_hex or "#ffffff",
+        text_hex=settings.text_hex or "#262626",
+        base_font_pt=settings.base_font_pt or 10.0,
+        heading_font_pt=settings.heading_font_pt or 13.0,
         logo_path=logo_path,
         notes=body.notes,
     )

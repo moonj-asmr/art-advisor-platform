@@ -23,6 +23,7 @@ export interface Collection {
   id: number;
   name: string;
   created_at: string | null;
+  last_added_at: string | null; // when works last went in — drives "recently used" sorting
   counts: { pending: number; liked: number; passed: number };
   total: number;
 }
@@ -55,9 +56,14 @@ export interface AdvisorSettings {
   logo_media: string;
   logo_url: string | null;
   align: 'left' | 'center';
-  font: 'serif' | 'sans';
+  font: string; // a key from font_options
   accent_hex: string;
+  background_hex: string;
+  text_hex: string;
+  base_font_pt: number;
+  heading_font_pt: number;
   image_scale: number;
   style_request: string;
   style_summary?: string;
+  font_options?: Array<{ key: string; label: string }>;
 }

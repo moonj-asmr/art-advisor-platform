@@ -71,6 +71,33 @@ def test_login_first_use_creates_account_then_verifies():
     assert wrong_email.status_code == 401
 
 
+def test_style_dials_apply_to_preview():
+    r = client.put("/api/settings", json={
+        "background_hex": "#e8f2e8",  # light green
+        "text_hex": "#333333",
+        "base_font_pt": 12.0,
+        "heading_font_pt": 16.0,
+        "font": "garamond",
+    })
+    assert r.status_code == 200
+    got = client.get("/api/settings").json()
+    assert got["background_hex"] == "#e8f2e8" and got["base_font_pt"] == 12.0
+    assert {"key": "garamond", "label": "EB Garamond"} in got["font_options"]
+
+    r = client.get("/api/settings/preview")
+    assert r.status_code == 200
+    doc = fitz.open(stream=r.content, filetype="pdf")
+    pix = doc[0].get_pixmap()
+    # top-left corner carries the light-green page background
+    r_, g_, b_ = pix.pixel(2, 2)
+    assert g_ > r_ and g_ > b_ and g_ > 220, (r_, g_, b_)
+    assert doc[1].get_text().strip(), "artwork page must still render text with the TTF family"
+    doc.close()
+    # reset so later tests keep a white background
+    client.put("/api/settings", json={"background_hex": "#ffffff", "font": "serif",
+                                      "base_font_pt": 10.0, "heading_font_pt": 13.0})
+
+
 def test_settings_preview_images_for_in_app_viewer():
     r = client.get("/api/settings/preview/images")
     assert r.status_code == 200

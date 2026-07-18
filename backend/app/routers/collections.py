@@ -22,6 +22,7 @@ def list_collections(db: Session = Depends(get_db)):
         out.append({
             "id": c.id, "name": c.name,
             "created_at": c.created_at.isoformat() if c.created_at else None,
+            "last_added_at": c.last_added_at.isoformat() if c.last_added_at else None,
             "counts": counts, "total": len(c.members),
         })
     return out
