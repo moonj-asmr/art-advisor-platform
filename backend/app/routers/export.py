@@ -23,6 +23,7 @@ class ExportRequest(BaseModel):
     client_name: str = ""
     show_price: bool = True
     show_gallery: bool = True
+    show_description: bool = False
     notes: dict[str, str] = {}
 
 
@@ -67,6 +68,7 @@ def export_pdf(body: ExportRequest, db: Session = Depends(get_db)):
         image_scale=settings.image_scale or 1.0,
         show_price=body.show_price,
         show_gallery=body.show_gallery,
+        show_description=body.show_description,
         font=settings.font if settings.font in ("serif", "sans") else "serif",
         accent_hex=settings.accent_hex or "#1a1a1a",
         logo_path=logo_path,

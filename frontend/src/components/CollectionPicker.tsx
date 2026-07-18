@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Check, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { Check, Pencil, Plus, Trash2 } from 'lucide-react';
 import type { Collection } from '../types';
+import { Sheet } from './Sheet';
 
 interface Props {
   title: string;
@@ -54,19 +55,7 @@ export const CollectionPicker: React.FC<Props> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-40 bg-black/40 flex items-end sm:items-center justify-center" onClick={onClose}>
-      <div
-        className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-5 max-h-[80vh] overflow-y-auto border border-zinc-200 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between mb-1">
-          <h3 className="font-semibold text-zinc-900">{title}</h3>
-          <button aria-label="Close" onClick={onClose} className="text-zinc-400 hover:text-zinc-900">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-        {subtitle && <p className="text-xs text-zinc-500 mb-3">{subtitle}</p>}
-
+    <Sheet title={title} subtitle={subtitle} onClose={onClose}>
         <div className="space-y-1.5 mb-4">
           {includeGeneral && (
             <button
@@ -188,7 +177,6 @@ export const CollectionPicker: React.FC<Props> = ({
         >
           {confirmLabel}
         </button>
-      </div>
-    </div>
+    </Sheet>
   );
 };

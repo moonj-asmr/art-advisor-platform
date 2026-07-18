@@ -54,3 +54,11 @@ def test_settings_preview_renders_pdf_with_house_style():
     assert "Style Preview" in cover
     assert "Britt Art Advisory" in cover
     doc.close()
+
+
+def test_settings_preview_images_for_in_app_viewer():
+    r = client.get("/api/settings/preview/images")
+    assert r.status_code == 200
+    pages = r.json()["pages"]
+    assert len(pages) >= 2  # cover + at least one artwork page
+    assert all(p.startswith("data:image/png;base64,") for p in pages)

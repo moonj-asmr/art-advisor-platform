@@ -107,7 +107,8 @@ export const api = {
     );
   },
 
-  settingsPreviewUrl: () => `${BASE}/api/settings/preview`,
+  settingsPreviewImages: () =>
+    fetch(`${BASE}/api/settings/preview/images`).then((r) => json<{ pages: string[] }>(r)),
 
   exportPdf: async (artworkIds: number[], opts: ExportOptions): Promise<Blob> => {
     const res = await fetch(`${BASE}/api/export`, {

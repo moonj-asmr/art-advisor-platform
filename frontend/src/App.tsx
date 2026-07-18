@@ -20,8 +20,6 @@ function App() {
   const [pickingAllocation, setPickingAllocation] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  // floating nav hides on scroll-down, jogs back on scroll-up
-  const [navVisible, setNavVisible] = useState(true);
 
   const reload = useCallback(async () => {
     try {
@@ -48,10 +46,6 @@ function App() {
     const timer = setInterval(reload, 3500);
     return () => clearInterval(timer);
   }, [anyProcessing, reload]);
-
-  useEffect(() => {
-    setNavVisible(true); // switching tabs always brings the nav back
-  }, [tab]);
 
   const pending = artworks.filter((a) => a.status === 'pending');
   const decided = artworks.filter((a) => a.status !== 'pending');
@@ -127,8 +121,9 @@ function App() {
         <div className="h-2" />
       </header>
 
-      {/* body */}
-      <main className="flex-1 flex flex-col min-h-0">
+      {/* body — relative so the Library's select action bar can float just
+          above the permanent bottom nav */}
+      <main className="flex-1 flex flex-col min-h-0 relative">
         {!loaded ? (
           <div className="flex-1 flex items-center justify-center text-zinc-400 text-sm">Loading…</div>
         ) : tab === 'deck' ? (
@@ -147,23 +142,17 @@ function App() {
             onCreateCollection={createCollection}
             onRenameCollection={renameCollection}
             onDeleteCollection={deleteCollection}
-            onNavVisible={setNavVisible}
           />
         ) : (
-          <InboxView uploads={uploads} onUploaded={reload} onNavVisible={setNavVisible} />
+          <InboxView uploads={uploads} onUploaded={reload} />
         )}
       </main>
 
-      {/* floating lozenge nav — full card width, fixed height shared with the
-          Library's select-mode action bar so the two swap without jumping */}
+      {/* permanent bottom nav — low and tight, always visible; the selected
+          tab keeps its black pill state */}
       <nav
-        className={`absolute left-4 right-4 z-30 h-[52px] flex items-center gap-1 bg-white/90 backdrop-blur border border-zinc-200 shadow-[0_8px_24px_rgba(0,0,0,0.14)] rounded-full px-1.5 transition-all duration-300 ${
-          navVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}
-        style={{
-          bottom: 'max(env(safe-area-inset-bottom), 0.9rem)',
-          transform: `translateY(${navVisible ? '0' : '6rem'})`,
-        }}
+        className="shrink-0 z-30 bg-white border-t border-zinc-200 flex items-center gap-1 px-3 pt-1.5"
+        style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 0.4rem)' }}
       >
         {([
           ['deck', Layers, 'Deck', pending.length],
