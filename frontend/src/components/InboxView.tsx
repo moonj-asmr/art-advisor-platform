@@ -5,9 +5,23 @@ import type { UploadRecord } from '../types';
 
 interface Props {
   uploads: UploadRecord[];
+  reviewStats: Record<number, { pending: number; total: number }>;
   onUploaded: () => void;
   onReview: (u: UploadRecord) => void; // deal just this PDF's works into the deck
 }
+
+/** Traffic-light review status for one PDF: red = untouched in the deck,
+ *  yellow = partly swiped, green = every work decided. */
+const reviewStatus = (stats?: { pending: number; total: number }) => {
+  if (!stats || stats.total === 0) return null;
+  if (stats.pending === 0) return { dot: 'bg-emerald-500', text: 'text-emerald-700', label: 'Reviewed' };
+  if (stats.pending === stats.total) return { dot: 'bg-rose-500', text: 'text-rose-600', label: 'Not reviewed' };
+  return {
+    dot: 'bg-amber-400',
+    text: 'text-amber-600',
+    label: `${stats.total - stats.pending} of ${stats.total} reviewed`,
+  };
+};
 
 const formatDate = (iso: string | null) => {
   if (!iso) return '';
@@ -75,7 +89,7 @@ const SwipeRow: React.FC<{ onDelete: () => void; children: React.ReactNode }> = 
   );
 };
 
-export const InboxView: React.FC<Props> = ({ uploads, onUploaded, onReview }) => {
+export const InboxView: React.FC<Props> = ({ uploads, reviewStats, onUploaded, onReview }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -145,7 +159,9 @@ export const InboxView: React.FC<Props> = ({ uploads, onUploaded, onReview }) =>
           <p className="text-xs text-zinc-500">Nothing yet.</p>
         ) : (
           <div className="space-y-2">
-            {uploads.map((u) => (
+            {uploads.map((u) => {
+              const rs = u.status === 'done' ? reviewStatus(reviewStats[u.id]) : null;
+              return (
               <SwipeRow key={u.id} onDelete={() => removeUpload(u)}>
                 <div className="flex items-center gap-3 border border-zinc-200 rounded-xl px-4 py-3 bg-white select-none">
                   {u.status === 'processing' ? (
@@ -154,7 +170,10 @@ export const InboxView: React.FC<Props> = ({ uploads, onUploaded, onReview }) =>
                     <FileText className="w-5 h-5 text-zinc-400 shrink-0" />
                   )}
                   <div className="min-w-0 flex-1">
-                    <div className="text-sm text-zinc-900 truncate">{u.filename}</div>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      {rs && <span className={`w-2 h-2 rounded-full shrink-0 ${rs.dot}`} />}
+                      <span className="text-sm text-zinc-900 truncate">{u.filename}</span>
+                    </div>
                     {u.status === 'processing' ? (
                       <div className="text-xs text-blue-600 truncate">AI is reading this PDF… you can keep working</div>
                     ) : u.status === 'failed' ? (
@@ -174,7 +193,8 @@ export const InboxView: React.FC<Props> = ({ uploads, onUploaded, onReview }) =>
                       </div>
                     ) : (
                       <div className="text-xs text-zinc-500 truncate">
-                        {u.gallery || 'Unknown gallery'} · {formatDate(u.created_at)} · {u.page_count} pages → {u.artwork_count} works
+                        {u.gallery || 'Unknown gallery'} · {formatDate(u.created_at)} · {u.artwork_count} works
+                        {rs && <span className={rs.text}> · {rs.label}</span>}
                       </div>
                     )}
                   </div>
@@ -202,7 +222,8 @@ export const InboxView: React.FC<Props> = ({ uploads, onUploaded, onReview }) =>
                   )}
                 </div>
               </SwipeRow>
-            ))}
+              );
+            })}
           </div>
         )}
         {uploads.length > 0 && (

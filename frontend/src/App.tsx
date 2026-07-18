@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ChevronDown, Heart, Inbox, Layers, Settings } from 'lucide-react';
 import { api } from './lib/api';
 import type { Artwork, Collection, UploadRecord } from './types';
@@ -53,6 +53,17 @@ function App() {
   const decided = artworks.filter((a) => a.status !== 'pending');
   const likedCount = artworks.filter((a) => a.status === 'liked').length;
   const deckPending = reviewUpload ? pending.filter((a) => a.upload_id === reviewUpload.id) : pending;
+
+  // per-PDF review progress for the Inbox's colored status
+  const reviewStats = useMemo(() => {
+    const stats: Record<number, { pending: number; total: number }> = {};
+    for (const a of artworks) {
+      const s = (stats[a.upload_id] ??= { pending: 0, total: 0 });
+      s.total += 1;
+      if (a.status === 'pending') s.pending += 1;
+    }
+    return stats;
+  }, [artworks]);
 
   // a deleted PDF can't stay the deck filter
   useEffect(() => {
@@ -157,6 +168,7 @@ function App() {
         ) : (
           <InboxView
             uploads={uploads}
+            reviewStats={reviewStats}
             onUploaded={reload}
             onReview={(u) => {
               setReviewUpload({ id: u.id, filename: u.filename });

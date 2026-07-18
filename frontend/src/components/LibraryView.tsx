@@ -116,11 +116,12 @@ export const LibraryView: React.FC<Props> = ({
       {/* everything scrolls together — the controls simply slide off the top,
           no animated collapse to glitch mid-scroll */}
       <div className={`flex-1 overflow-y-auto px-4 ${actionBarOpen ? 'pb-24' : 'pb-6'}`}>
-      <div className="space-y-2 pt-1 pb-2">
-        <div className="flex items-center gap-2">
+      {/* controls share grid columns so the collections row lines up exactly
+          under the Passed/Selects slide — the cog ends where the slide ends */}
+      <div className="grid grid-cols-[auto_1fr_auto] gap-x-2 gap-y-2 items-center pt-1 pb-2">
           {/* segment control — Passed left / Selects right matches the swipe
               directions; Passed is deliberately quieter, it's the safety net */}
-          <div className="flex items-center bg-zinc-100 rounded-full p-0.5">
+          <div className="flex items-center bg-zinc-100 rounded-full p-0.5 justify-self-start">
             {([
               ['passed', 'Passed', passedCount],
               ['liked', 'Selects', likedCount],
@@ -145,48 +146,52 @@ export const LibraryView: React.FC<Props> = ({
               </button>
             ))}
           </div>
-          <div className="flex-1" />
-          {segment === 'liked' && shown.length > 0 && !selectMode && (
+          <div />
+          {segment === 'liked' && shown.length > 0 && !selectMode ? (
             <button
               onClick={() => setExporting(true)}
-              className="flex items-center gap-1.5 bg-emerald-600 text-white text-sm font-semibold rounded-full px-4 py-2 whitespace-nowrap shrink-0 hover:bg-emerald-500"
+              className="flex items-center gap-1.5 bg-emerald-600 text-white text-sm font-semibold rounded-full px-4 py-2 whitespace-nowrap justify-self-end hover:bg-emerald-500"
             >
               <FileDown className="w-4 h-4" />
               Export
             </button>
+          ) : (
+            <div />
           )}
-        </div>
-        <div className="flex items-center gap-2">
-          <select
-            value={filter === 'all' ? '' : filter}
-            onChange={(e) => setFilter(e.target.value ? Number(e.target.value) : 'all')}
-            className="flex-1 min-w-0 bg-zinc-100 border border-zinc-200 text-zinc-600 text-sm rounded-full px-3 py-2 focus:outline-none"
-          >
-            <option value="">All collections</option>
-            {collections.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-          <button
-            title="Manage collections"
-            onClick={() => setManaging(true)}
-            className="p-2.5 rounded-full bg-zinc-100 border border-zinc-200 text-zinc-500 hover:text-zinc-900 shrink-0"
-          >
-            <FolderCog className="w-4 h-4" />
-          </button>
-          <div className="flex-1" />
+
+          {/* row 2 — stretches to the same width as the slide above */}
+          <div className="flex items-center gap-2 justify-self-stretch">
+            <select
+              value={filter === 'all' ? '' : filter}
+              onChange={(e) => setFilter(e.target.value ? Number(e.target.value) : 'all')}
+              className="flex-1 min-w-0 bg-zinc-100 border border-zinc-200 text-zinc-700 text-[15px] rounded-full px-4 py-2.5 focus:outline-none"
+            >
+              <option value="">All collections</option>
+              {collections.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+            <button
+              title="Manage collections"
+              onClick={() => setManaging(true)}
+              className="p-3 rounded-full bg-zinc-100 border border-zinc-200 text-zinc-500 hover:text-zinc-900 shrink-0"
+            >
+              <FolderCog className="w-5 h-5" />
+            </button>
+          </div>
+          <div />
           <button
             onClick={() => (selectMode ? exitSelect() : setSelectMode(true))}
-            className={`text-sm rounded-full px-4 py-2 border ${selectMode ? 'bg-zinc-900 text-white border-zinc-900' : 'border-zinc-300 text-zinc-600'}`}
+            className={`text-sm rounded-full px-4 py-2 border justify-self-end ${selectMode ? 'bg-zinc-900 text-white border-zinc-900' : 'border-zinc-300 text-zinc-600'}`}
           >
             {selectMode ? 'Done' : 'Select'}
           </button>
-        </div>
-        {selectMode && checked.length === 0 && (
-          <p className="text-xs text-zinc-400">
-            Tap works to select them — then add them to a collection, move them, or export.
-          </p>
-        )}
+
+          {selectMode && checked.length === 0 && (
+            <p className="col-span-3 text-xs text-zinc-400">
+              Tap works to select them — then add them to a collection, move them, or export.
+            </p>
+          )}
       </div>
 
       <div>
@@ -197,16 +202,19 @@ export const LibraryView: React.FC<Props> = ({
               : 'No passed works here. Anything you pass in the deck lands in this list, so nothing is ever lost.'}
           </div>
         ) : (
-          // two staggered columns — cards keep each artwork's true proportions,
-          // never cropping into the work, so heights vary and stack naturally
-          <div className="columns-2 gap-3">
-            {shown.map((a) => {
+          // two explicit top-aligned columns (odd items left, even items right)
+          // so the first row of cards always starts level; cards keep each
+          // artwork's true proportions and never crop into the work
+          <div className="flex items-start gap-3">
+            {[0, 1].map((col) => (
+              <div key={col} className="flex-1 min-w-0 space-y-3">
+                {shown.filter((_, i) => i % 2 === col).map((a) => {
               const isChecked = checked.includes(a.id);
               return (
                 <div
                   key={a.id}
                   onClick={() => (selectMode ? toggleCheck(a.id) : setViewing(a))}
-                  className={`relative mb-3 break-inside-avoid bg-white rounded-xl overflow-hidden border ${
+                  className={`relative bg-white rounded-xl overflow-hidden border ${
                     selectMode && isChecked ? 'border-zinc-900 ring-2 ring-zinc-900' : 'border-zinc-200'
                   }`}
                 >
@@ -257,7 +265,9 @@ export const LibraryView: React.FC<Props> = ({
                   </div>
                 </div>
               );
-            })}
+                })}
+              </div>
+            ))}
           </div>
         )}
       </div>
