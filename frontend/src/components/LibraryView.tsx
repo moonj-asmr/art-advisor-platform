@@ -335,54 +335,66 @@ export const LibraryView: React.FC<Props> = ({
         </div>
       )}
       {actionBarOpen && (
-        <div className="absolute left-4 right-4 bottom-3 z-30 h-[52px] bg-white/95 backdrop-blur border border-zinc-200 shadow-[0_8px_24px_rgba(0,0,0,0.14)] rounded-full px-2.5 flex items-center justify-center gap-1.5 overflow-x-auto">
-          {/* count first, so "0" makes it obvious you tap works next */}
+        // icon-only round buttons — everything fits at once, no scrolling;
+        // each carries a title for what it does
+        <div className="absolute left-4 right-4 bottom-3 z-30 h-[52px] bg-white/95 backdrop-blur border border-zinc-200 shadow-[0_8px_24px_rgba(0,0,0,0.14)] rounded-full px-3 flex items-center gap-2">
           <span className={`text-xs font-bold rounded-full min-w-[24px] h-6 px-1.5 flex items-center justify-center shrink-0 ${
             nothingChecked ? 'bg-zinc-100 text-zinc-400' : 'bg-zinc-900 text-white'
           }`}>
             {checked.length}
           </span>
           <span className="w-px self-stretch my-3 bg-zinc-200 shrink-0" />
-          <button
-            disabled={nothingChecked}
-            onClick={() => setPicking(true)}
-            className="flex items-center gap-1.5 bg-zinc-900 text-white text-xs font-semibold rounded-full px-2.5 py-2 whitespace-nowrap shrink-0 disabled:opacity-35"
-          >
-            <FolderPlus className="w-3.5 h-3.5" /> Add
-          </button>
-          <button
-            disabled={nothingChecked}
-            onClick={bulkSwap}
-            className="flex items-center gap-1.5 bg-zinc-100 text-zinc-700 text-xs font-semibold rounded-full px-2.5 py-2 whitespace-nowrap shrink-0 disabled:opacity-35"
-          >
-            <ArrowLeftRight className="w-3.5 h-3.5" /> {segment === 'liked' ? 'Pass' : 'Select'}
-          </button>
-          <button
-            disabled={nothingChecked}
-            onClick={bulkBackToDeck}
-            className="flex items-center gap-1.5 bg-zinc-100 text-zinc-700 text-xs font-semibold rounded-full px-2.5 py-2 whitespace-nowrap shrink-0 disabled:opacity-35"
-          >
-            <Layers className="w-3.5 h-3.5" /> Re-deck
-          </button>
-          {typeof filter === 'number' && (
+          <div className="flex-1 flex items-center justify-evenly">
             <button
+              aria-label="Add to collection"
+              title="Add to collection"
               disabled={nothingChecked}
-              title={`Remove from ${collectionName(filter)}`}
-              onClick={bulkRemoveFromCollection}
-              className="flex items-center gap-1.5 bg-zinc-100 text-rose-600 text-xs font-semibold rounded-full px-2.5 py-2 whitespace-nowrap shrink-0 disabled:opacity-35"
+              onClick={() => setPicking(true)}
+              className="w-10 h-10 rounded-full bg-zinc-900 text-white flex items-center justify-center disabled:opacity-35"
             >
-              <FolderMinus className="w-3.5 h-3.5" /> Remove
+              <FolderPlus className="w-[18px] h-[18px]" />
             </button>
-          )}
-          {segment === 'liked' && (
             <button
+              aria-label={segment === 'liked' ? 'Move to Passed' : 'Move to Selects'}
+              title={segment === 'liked' ? 'Move to Passed' : 'Move to Selects'}
               disabled={nothingChecked}
-              onClick={() => setExportingChecked(true)}
-              className="flex items-center gap-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-full px-2.5 py-2 whitespace-nowrap shrink-0 ml-auto disabled:opacity-35"
+              onClick={bulkSwap}
+              className="w-10 h-10 rounded-full bg-zinc-100 text-zinc-700 flex items-center justify-center disabled:opacity-35"
             >
-              <FileDown className="w-3.5 h-3.5" /> Export
+              <ArrowLeftRight className="w-[18px] h-[18px]" />
             </button>
-          )}
+            <button
+              aria-label="Back to the deck"
+              title="Back to the deck"
+              disabled={nothingChecked}
+              onClick={bulkBackToDeck}
+              className="w-10 h-10 rounded-full bg-zinc-100 text-zinc-700 flex items-center justify-center disabled:opacity-35"
+            >
+              <Layers className="w-[18px] h-[18px]" />
+            </button>
+            {typeof filter === 'number' && (
+              <button
+                aria-label={`Remove from ${collectionName(filter)}`}
+                title={`Remove from ${collectionName(filter)}`}
+                disabled={nothingChecked}
+                onClick={bulkRemoveFromCollection}
+                className="w-10 h-10 rounded-full bg-zinc-100 text-rose-600 flex items-center justify-center disabled:opacity-35"
+              >
+                <FolderMinus className="w-[18px] h-[18px]" />
+              </button>
+            )}
+            {segment === 'liked' && (
+              <button
+                aria-label="Export selection"
+                title="Export selection"
+                disabled={nothingChecked}
+                onClick={() => setExportingChecked(true)}
+                className="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center disabled:opacity-35"
+              >
+                <FileDown className="w-[18px] h-[18px]" />
+              </button>
+            )}
+          </div>
         </div>
       )}
 
