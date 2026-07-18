@@ -4,9 +4,15 @@
 
 @layer base {
   html,
-  body,
-  #root {
+  body {
     height: 100%;
+  }
+  /* Pin the app to the visual viewport. h-dvh alone drifts on iOS when the
+     browser chrome shows/hides, leaving the nav floating above the bottom. */
+  #root {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
   }
   body {
     @apply bg-white text-zinc-900 antialiased;

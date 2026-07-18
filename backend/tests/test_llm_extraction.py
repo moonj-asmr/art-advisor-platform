@@ -105,5 +105,7 @@ def test_upload_falls_back_to_heuristics_when_ai_fails(tmp_path, monkeypatch):
         with open(pdf, "rb") as f:
             r = client.post("/api/uploads", files={"file": ("g.pdf", f, "application/pdf")})
     assert r.status_code == 200, r.text
-    assert r.json()["artworks_found"] == 3
-    assert r.json()["engine"] == "basic"
+    rows = client.get("/api/uploads").json()
+    mine = next(u for u in rows if u["id"] == r.json()["upload_id"])
+    assert mine["status"] == "done"
+    assert mine["artwork_count"] == 3

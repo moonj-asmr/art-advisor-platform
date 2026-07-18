@@ -93,24 +93,16 @@ export const InboxView: React.FC<Props> = ({ uploads, onUploaded, onNavVisible }
   };
 
   const handleFiles = async (files: FileList | File[]) => {
+    const pdfs = Array.from(files).filter((f) => f.name.toLowerCase().endsWith('.pdf'));
+    if (pdfs.length === 0) return;
     setBusy(true);
     setMessage('');
-    let found = 0;
-    let failed = 0;
-    let aiUsed = false;
-    for (const file of Array.from(files)) {
-      if (!file.name.toLowerCase().endsWith('.pdf')) continue;
-      try {
-        const res = await api.uploadPdf(file, null, '');
-        found += res.artworks_found;
-        if (res.engine === 'ai') aiUsed = true;
-      } catch {
-        failed += 1;
-      }
-    }
+    // fire all uploads at once — the server queues each for AI processing and
+    // answers immediately, so the portal stays free for more PDFs
+    const results = await Promise.allSettled(pdfs.map((f) => api.uploadPdf(f, null, '')));
+    const failed = results.filter((r) => r.status === 'rejected').length;
     setBusy(false);
-    const how = aiUsed ? 'read by AI' : 'extracted';
-    setMessage(failed ? `Some uploads failed. ${found} artworks ${how}.` : `${found} artworks ${how} — they're in your deck.`);
+    if (failed) setMessage(`${failed} upload${failed === 1 ? '' : 's'} failed — try again.`);
     onUploaded();
   };
 
@@ -141,26 +133,17 @@ export const InboxView: React.FC<Props> = ({ uploads, onUploaded, onNavVisible }
         onDragLeave={() => setDragOver(false)}
         onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}
       >
-        {busy ? (
-          <>
-            <Loader2 className="w-6 h-6 text-zinc-500 animate-spin shrink-0" />
-            <p className="text-sm text-zinc-600">Reading the PDF with AI — this can take a minute or two…</p>
-          </>
-        ) : (
-          <>
-            <div className="rounded-full bg-zinc-200 p-2.5 shrink-0">
-              <Upload className="w-5 h-5 text-zinc-700" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-zinc-900">Drop gallery PDFs here</p>
-              <p className="text-xs text-zinc-500">They land in your deck, ready to swipe.</p>
-            </div>
-            <button onClick={() => inputRef.current?.click()} className="shrink-0 px-3.5 py-2 bg-zinc-900 text-white text-xs font-semibold rounded-full hover:bg-zinc-700">
-              Choose
-            </button>
-            <input ref={inputRef} type="file" accept="application/pdf" multiple hidden onChange={(e) => e.target.files && handleFiles(e.target.files)} />
-          </>
-        )}
+        <div className="rounded-full bg-zinc-200 p-2.5 shrink-0">
+          {busy ? <Loader2 className="w-5 h-5 text-zinc-700 animate-spin" /> : <Upload className="w-5 h-5 text-zinc-700" />}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-zinc-900">Drop gallery PDFs here</p>
+          <p className="text-xs text-zinc-500">The AI reads each one in the background — keep adding more.</p>
+        </div>
+        <button onClick={() => inputRef.current?.click()} className="shrink-0 px-3.5 py-2 bg-zinc-900 text-white text-xs font-semibold rounded-full hover:bg-zinc-700">
+          Choose
+        </button>
+        <input ref={inputRef} type="file" accept="application/pdf" multiple hidden onChange={(e) => e.target.files && handleFiles(e.target.files)} />
       </div>
       {message && <p className="text-xs text-emerald-600 mt-2 text-center">{message}</p>}
 
@@ -174,10 +157,18 @@ export const InboxView: React.FC<Props> = ({ uploads, onUploaded, onNavVisible }
             {uploads.map((u) => (
               <SwipeRow key={u.id} onDelete={() => removeUpload(u)}>
                 <div className="flex items-center gap-3 border border-zinc-200 rounded-xl px-4 py-3 bg-white select-none">
-                  <FileText className="w-5 h-5 text-zinc-400 shrink-0" />
+                  {u.status === 'processing' ? (
+                    <Loader2 className="w-5 h-5 text-blue-600 animate-spin shrink-0" />
+                  ) : (
+                    <FileText className="w-5 h-5 text-zinc-400 shrink-0" />
+                  )}
                   <div className="min-w-0 flex-1">
                     <div className="text-sm text-zinc-900 truncate">{u.filename}</div>
-                    {editingId === u.id ? (
+                    {u.status === 'processing' ? (
+                      <div className="text-xs text-blue-600 truncate">AI is reading this PDF… you can keep working</div>
+                    ) : u.status === 'failed' ? (
+                      <div className="text-xs text-rose-500 truncate">Processing failed — swipe left to delete and retry</div>
+                    ) : editingId === u.id ? (
                       <div className="flex items-center gap-1.5 mt-1" onPointerDown={(e) => e.stopPropagation()}>
                         <input
                           value={editGallery}
@@ -196,7 +187,7 @@ export const InboxView: React.FC<Props> = ({ uploads, onUploaded, onNavVisible }
                       </div>
                     )}
                   </div>
-                  {editingId !== u.id && (
+                  {editingId !== u.id && u.status === 'done' && (
                     <button
                       title="Edit gallery name"
                       onPointerDown={(e) => e.stopPropagation()}

@@ -8,69 +8,20 @@ interface Props {
   onClose: () => void;
 }
 
-/**
- * The "make it mine" panel: every advisor formats client PDFs differently,
- * so the export is driven by style options rather than a fixed template.
- */
+/** Per-client export choices only. The advisory identity, logo, and layout
+ *  come from Settings (gear icon on the Inbox tab) and print automatically. */
 export const ExportSheet: React.FC<Props> = ({ artworks, onClose }) => {
   const [opts, setOpts] = useState<ExportOptions>({
     title: '',
     client_name: '',
-    advisor_name: '',
-    align: 'left',
-    image_scale: 1.0,
     show_price: true,
     show_gallery: true,
-    show_description: false,
-    font: 'serif',
-    accent_hex: '#1a1a1a',
-    logo_media: '',
     notes: {},
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [logoName, setLogoName] = useState('');
-  const [logoPreview, setLogoPreview] = useState('');
 
   const set = <K extends keyof ExportOptions>(k: K, v: ExportOptions[K]) => setOpts((o) => ({ ...o, [k]: v }));
-
-  // iPhones hand over HEIC photos; re-encode whatever was picked as PNG in the
-  // browser so the server always gets a format it can place in the PDF.
-  const toPng = async (file: File): Promise<File> => {
-    const url = URL.createObjectURL(file);
-    try {
-      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-        const i = new Image();
-        i.onload = () => resolve(i);
-        i.onerror = () => reject(new Error('unreadable image'));
-        i.src = url;
-      });
-      const canvas = document.createElement('canvas');
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      canvas.getContext('2d')!.drawImage(img, 0, 0);
-      const blob = await new Promise<Blob>((resolve, reject) =>
-        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('encode failed'))), 'image/png'),
-      );
-      return new File([blob], 'logo.png', { type: 'image/png' });
-    } finally {
-      URL.revokeObjectURL(url);
-    }
-  };
-
-  const onLogo = async (file: File | undefined) => {
-    if (!file) return;
-    setError('');
-    try {
-      const png = await toPng(file);
-      const { logo_media } = await api.uploadLogo(png);
-      set('logo_media', logo_media);
-      setLogoName(file.name);
-      setLogoPreview(URL.createObjectURL(png));
-    } catch (e) {
-      setError('Could not read that image — try a PNG or JPEG file.');
-    }
-  };
 
   const doExport = async () => {
     setBusy(true);
@@ -95,8 +46,6 @@ export const ExportSheet: React.FC<Props> = ({ artworks, onClose }) => {
   };
 
   const field = 'mt-1 w-full bg-white border border-zinc-300 rounded-lg px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:border-zinc-500';
-  const chip = (activeCond: boolean) =>
-    `px-3 py-1.5 rounded-full text-sm border ${activeCond ? 'bg-zinc-900 text-white border-zinc-900 font-medium' : 'border-zinc-300 text-zinc-600'}`;
 
   return (
     <div className="fixed inset-0 z-40 bg-black/40 flex items-end sm:items-center justify-center" onClick={onClose}>
@@ -106,52 +55,28 @@ export const ExportSheet: React.FC<Props> = ({ artworks, onClose }) => {
       >
         <div className="flex items-center justify-between mb-1">
           <h3 className="font-semibold text-zinc-900">Export client PDF</h3>
-          <button onClick={onClose} className="text-zinc-400 hover:text-zinc-900">
+          <button aria-label="Close" onClick={onClose} className="text-zinc-400 hover:text-zinc-900">
             <X className="w-5 h-5" />
           </button>
         </div>
         <p className="text-xs text-zinc-500 mb-4">
-          {artworks.length} work{artworks.length === 1 ? '' : 's'} · one per page, in your formatting — not the galleries'.
+          {artworks.length} work{artworks.length === 1 ? '' : 's'} · one per page. Your advisory name,
+          logo and layout come from Settings.
         </p>
 
         <label className="block mb-3">
           <span className="text-xs text-zinc-500">Title (cover & header)</span>
           <input className={field} placeholder="e.g. Art Basel — Selections" value={opts.title} onChange={(e) => set('title', e.target.value)} />
         </label>
-        <label className="block mb-3">
+        <label className="block mb-4">
           <span className="text-xs text-zinc-500">Client name (personalizes the cover)</span>
           <input className={field} placeholder="e.g. Alice Chen" value={opts.client_name} onChange={(e) => set('client_name', e.target.value)} />
         </label>
-        <label className="block mb-4">
-          <span className="text-xs text-zinc-500">Your name / advisory (footer)</span>
-          <input className={field} placeholder="e.g. Britt Art Advisory" value={opts.advisor_name} onChange={(e) => set('advisor_name', e.target.value)} />
-        </label>
 
-        <div className="mb-4">
-          <span className="text-xs text-zinc-500 block mb-2">Layout</span>
-          <div className="flex gap-2 flex-wrap">
-            <button className={chip(opts.align === 'left')} onClick={() => set('align', 'left')}>Left aligned</button>
-            <button className={chip(opts.align === 'center')} onClick={() => set('align', 'center')}>Centered</button>
-            <button className={chip(opts.font === 'serif')} onClick={() => set('font', 'serif')}>Serif</button>
-            <button className={chip(opts.font === 'sans')} onClick={() => set('font', 'sans')}>Sans</button>
-          </div>
-        </div>
-
-        <label className="block mb-4">
-          <span className="text-xs text-zinc-500">Image size</span>
-          <input
-            type="range" min={0.6} max={1.25} step={0.05} value={opts.image_scale}
-            onChange={(e) => set('image_scale', Number(e.target.value))}
-            className="w-full mt-2 accent-zinc-900"
-          />
-          <div className="flex justify-between text-[10px] text-zinc-400"><span>Intimate</span><span>Large</span></div>
-        </label>
-
-        <div className="mb-4 space-y-2">
+        <div className="mb-5 space-y-2">
           {([
             ['show_price', 'Show prices'],
             ['show_gallery', 'Show gallery names'],
-            ['show_description', 'Include artist texts'],
           ] as const).map(([k, label]) => (
             <label key={k} className="flex items-center gap-2 text-sm text-zinc-700">
               <input type="checkbox" checked={opts[k]} onChange={(e) => set(k, e.target.checked)} className="accent-zinc-900" />
@@ -159,17 +84,6 @@ export const ExportSheet: React.FC<Props> = ({ artworks, onClose }) => {
             </label>
           ))}
         </div>
-
-        <label className="block mb-5">
-          <span className="text-xs text-zinc-500">Your logo (appears on cover & each page)</span>
-          <input type="file" accept="image/*" onChange={(e) => onLogo(e.target.files?.[0])} className="mt-1 block w-full text-xs text-zinc-500 file:mr-3 file:rounded-full file:border-0 file:bg-zinc-100 file:px-3 file:py-1.5 file:text-zinc-700" />
-          {logoPreview && (
-            <span className="mt-2 flex items-center gap-2">
-              <img src={logoPreview} alt="logo preview" className="h-8 max-w-[120px] object-contain border border-zinc-200 rounded bg-white p-0.5" />
-              <span className="text-xs text-emerald-600">✓ {logoName} — will print on the PDF</span>
-            </span>
-          )}
-        </label>
 
         {error && <div className="text-xs text-rose-500 mb-3">{error}</div>}
 

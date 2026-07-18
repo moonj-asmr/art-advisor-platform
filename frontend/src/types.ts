@@ -34,20 +34,28 @@ export interface UploadRecord {
   page_count: number;
   collection_id: number | null;
   artwork_count: number;
+  status: 'processing' | 'done' | 'failed';
   created_at: string | null;
 }
 
 export interface ExportOptions {
   title: string;
   client_name: string;
-  advisor_name: string;
-  align: 'left' | 'center';
-  image_scale: number;
   show_price: boolean;
   show_gallery: boolean;
-  show_description: boolean;
+  notes: Record<string, string>;
+}
+
+export interface AdvisorSettings {
+  email: string;
+  advisory_name: string;
+  advisory_address: string;
+  logo_media: string;
+  logo_url: string | null;
+  align: 'left' | 'center';
   font: 'serif' | 'sans';
   accent_hex: string;
-  logo_media: string;
-  notes: Record<string, string>;
+  image_scale: number;
+  style_request: string;
+  style_summary?: string;
 }

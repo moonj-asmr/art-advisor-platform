@@ -7,9 +7,23 @@ from fastapi.staticfiles import StaticFiles
 
 from .models.database import Base, engine, MEDIA_DIR
 from .models import models  # noqa: F401 — register tables
-from .routers import artworks, collections, export, uploads
+from .routers import artworks, collections, export, settings, uploads
 
 Base.metadata.create_all(bind=engine)
+
+
+def _migrate_add_upload_status():
+    """create_all never alters existing tables; add the status column by hand."""
+    from sqlalchemy import text
+
+    try:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE uploads ADD COLUMN status VARCHAR DEFAULT 'done'"))
+    except Exception:
+        pass  # column already exists
+
+
+_migrate_add_upload_status()
 
 
 def _migrate_legacy_collection_stamps():
@@ -46,6 +60,7 @@ app.include_router(uploads.router, prefix="/api")
 app.include_router(artworks.router, prefix="/api")
 app.include_router(collections.router, prefix="/api")
 app.include_router(export.router, prefix="/api")
+app.include_router(settings.router, prefix="/api")
 
 
 @app.get("/api/health")

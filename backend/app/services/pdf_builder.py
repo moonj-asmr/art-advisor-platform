@@ -21,6 +21,7 @@ class StyleOptions:
     title: str = ""                # cover / header title, e.g. "Art Basel Selections"
     client_name: str = ""          # e.g. "Prepared for Alice Chen"
     advisor_name: str = ""         # footer credit
+    advisor_address: str = ""      # printed under the advisory name on the cover
     align: str = "left"            # left | center
     image_scale: float = 1.0       # 0.6 (intimate) .. 1.2 (full-bleed-ish)
     show_price: bool = True
@@ -72,10 +73,13 @@ def build_pdf(artworks: List[dict], media_dir: str, style: StyleOptions) -> byte
                 f"Prepared for {style.client_name}", fontname=italic, fontsize=13,
                 color=grey, align=fitz.TEXT_ALIGN_CENTER,
             )
-        if style.advisor_name:
+        if style.advisor_name or style.advisor_address:
+            credit = style.advisor_name
+            if style.advisor_address:
+                credit = (credit + "\n" if credit else "") + style.advisor_address
             page.insert_textbox(
-                fitz.Rect(margin, PAGE_H - margin - 20, PAGE_W - margin, PAGE_H - margin),
-                style.advisor_name, fontname=reg, fontsize=10, color=grey,
+                fitz.Rect(margin, PAGE_H - margin - 60, PAGE_W - margin, PAGE_H - margin + 10),
+                credit, fontname=reg, fontsize=9, color=grey,
                 align=fitz.TEXT_ALIGN_CENTER,
             )
 

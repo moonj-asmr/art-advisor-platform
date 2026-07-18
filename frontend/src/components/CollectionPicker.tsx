@@ -61,7 +61,7 @@ export const CollectionPicker: React.FC<Props> = ({
       >
         <div className="flex items-center justify-between mb-1">
           <h3 className="font-semibold text-zinc-900">{title}</h3>
-          <button onClick={onClose} className="text-zinc-400 hover:text-zinc-900">
+          <button aria-label="Close" onClick={onClose} className="text-zinc-400 hover:text-zinc-900">
             <X className="w-5 h-5" />
           </button>
         </div>
