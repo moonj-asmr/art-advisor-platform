@@ -39,6 +39,27 @@ def _migrate_add_settings_password():
 _migrate_add_settings_password()
 
 
+def _migrate_style_dials_and_collection_usage():
+    """New AI-settable style dials on settings; usage stamp on collections."""
+    from sqlalchemy import text
+
+    for ddl in (
+        "ALTER TABLE settings ADD COLUMN background_hex VARCHAR DEFAULT '#ffffff'",
+        "ALTER TABLE settings ADD COLUMN text_hex VARCHAR DEFAULT '#262626'",
+        "ALTER TABLE settings ADD COLUMN base_font_pt FLOAT DEFAULT 10.0",
+        "ALTER TABLE settings ADD COLUMN heading_font_pt FLOAT DEFAULT 13.0",
+        "ALTER TABLE collections ADD COLUMN last_added_at DATETIME",
+    ):
+        try:
+            with engine.begin() as conn:
+                conn.execute(text(ddl))
+        except Exception:
+            pass  # column already exists
+
+
+_migrate_style_dials_and_collection_usage()
+
+
 def _migrate_legacy_collection_stamps():
     """Artworks used to carry a single collection_id; membership now lives in
     the artwork_collections table. Carry old stamps over once."""

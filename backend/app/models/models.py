@@ -23,6 +23,7 @@ class Collection(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+    last_added_at = Column(DateTime, nullable=True)  # when works last went in — drives "recently used" sorting
 
     uploads = relationship("Upload", back_populates="collection")
     artworks = relationship("Artwork", back_populates="collection")
@@ -58,8 +59,12 @@ class Settings(Base):
     advisory_address = Column(Text, default="")
     logo_media = Column(String, default="")
     align = Column(String, default="left")
-    font = Column(String, default="serif")
+    font = Column(String, default="serif")  # a pdf_builder.FONT_FAMILIES key
     accent_hex = Column(String, default="#1a1a1a")
+    background_hex = Column(String, default="#ffffff")
+    text_hex = Column(String, default="#262626")
+    base_font_pt = Column(Float, default=10.0)
+    heading_font_pt = Column(Float, default=13.0)
     image_scale = Column(Float, default=1.0)
     style_request = Column(Text, default="")  # the advisor's own words, kept for reference
 
@@ -74,6 +79,10 @@ class Settings(Base):
             "align": self.align,
             "font": self.font,
             "accent_hex": self.accent_hex,
+            "background_hex": self.background_hex,
+            "text_hex": self.text_hex,
+            "base_font_pt": self.base_font_pt,
+            "heading_font_pt": self.heading_font_pt,
             "image_scale": self.image_scale,
             "style_request": self.style_request,
         }

@@ -1,7 +1,20 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Check, Pencil, Plus, Trash2 } from 'lucide-react';
 import type { Collection } from '../types';
 import { Sheet } from './Sheet';
+
+type SortKey = 'created' | 'name' | 'recent';
+
+const SORTS: Array<[SortKey, string]> = [
+  ['created', 'Date created'],
+  ['name', 'Name'],
+  ['recent', 'Recently added to'],
+];
+
+const formatDate = (iso: string | null) => {
+  if (!iso) return '';
+  return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+};
 
 interface Props {
   title: string;
@@ -10,6 +23,7 @@ interface Props {
   selected: number[];
   confirmLabel: string;
   includeGeneral?: boolean; // show a "General" row that means "no collection"
+  sortable?: boolean; // show the sort toggle (the manage-collections sheet)
   onConfirm: (ids: number[]) => void;
   onCreate: (name: string) => Promise<void>;
   onRename: (id: number, name: string) => Promise<void>;
@@ -21,9 +35,19 @@ interface Props {
  *  "allocate swipes into…" on the deck and "add to collection" in the library.
  *  Also the home of collection management: rename and delete. */
 export const CollectionPicker: React.FC<Props> = ({
-  title, subtitle, collections, selected, confirmLabel, includeGeneral, onConfirm, onCreate, onRename, onDelete, onClose,
+  title, subtitle, collections, selected, confirmLabel, includeGeneral, sortable, onConfirm, onCreate, onRename, onDelete, onClose,
 }) => {
   const [chosen, setChosen] = useState<number[]>(selected);
+  const [sort, setSort] = useState<SortKey>('created');
+  const sorted = useMemo(() => {
+    const list = [...collections];
+    if (sort === 'name') list.sort((a, b) => a.name.localeCompare(b.name));
+    else if (sort === 'recent')
+      list.sort((a, b) =>
+        (b.last_added_at ?? b.created_at ?? '').localeCompare(a.last_added_at ?? a.created_at ?? ''));
+    else list.sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''));
+    return list;
+  }, [collections, sort]);
   const [newName, setNewName] = useState('');
   const [creating, setCreating] = useState(false);
   const [renamingId, setRenamingId] = useState<number | null>(null);
@@ -56,6 +80,21 @@ export const CollectionPicker: React.FC<Props> = ({
 
   return (
     <Sheet title={title} subtitle={subtitle} onClose={onClose}>
+        {sortable && collections.length > 1 && (
+          <div className="flex gap-1.5 mb-3">
+            {SORTS.map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setSort(key)}
+                className={`px-3 py-1.5 rounded-full text-xs border ${
+                  sort === key ? 'bg-zinc-900 text-white border-zinc-900 font-medium' : 'border-zinc-200 text-zinc-500'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="space-y-1.5 mb-4">
           {includeGeneral && (
             <button
@@ -80,7 +119,7 @@ export const CollectionPicker: React.FC<Props> = ({
           {collections.length === 0 && !includeGeneral && (
             <p className="text-sm text-zinc-400 py-2">No collections yet — create one below.</p>
           )}
-          {collections.map((c) => {
+          {sorted.map((c) => {
             const on = chosen.includes(c.id);
             if (confirmingDelete === c.id) {
               return (
@@ -123,7 +162,9 @@ export const CollectionPicker: React.FC<Props> = ({
                   <>
                     <button onClick={() => toggle(c.id)} className="flex-1 min-w-0 text-left">
                       <div className="text-sm text-zinc-900 truncate">{c.name}</div>
-                      <div className="text-xs text-zinc-500">{c.counts.liked} selected</div>
+                      <div className="text-xs text-zinc-500 truncate">
+                        Created {formatDate(c.created_at)} · {c.counts.liked} select{c.counts.liked === 1 ? '' : 's'}
+                      </div>
                     </button>
                     <button
                       title="Rename"

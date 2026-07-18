@@ -81,10 +81,15 @@ export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
         advisory_address: settings.advisory_address,
         align: settings.align,
         font: settings.font,
+        accent_hex: settings.accent_hex,
+        background_hex: settings.background_hex,
+        text_hex: settings.text_hex,
+        base_font_pt: settings.base_font_pt,
+        heading_font_pt: settings.heading_font_pt,
         image_scale: settings.image_scale,
         style_request: settings.style_request,
       });
-      setSettings(saved);
+      setSettings((s) => ({ ...saved, font_options: saved.font_options ?? s?.font_options }));
       setNotice(saved.style_summary || 'Saved.');
     } catch {
       setNotice('Could not save — try again.');
@@ -123,19 +128,26 @@ export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
   const field = 'mt-1 w-full bg-white border border-zinc-300 rounded-lg px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:border-zinc-500';
   const chip = (on: boolean) =>
     `px-3.5 py-2 rounded-full text-sm border ${on ? 'bg-zinc-900 text-white border-zinc-900 font-medium' : 'border-zinc-300 text-zinc-600'}`;
+  // fixed-height status slot + constant-size buttons: saving never shifts the layout
   const saveRow = (
-    <div className="flex justify-end gap-2 mt-1">
-      {section === 'style' && (
-        <button onClick={openPreview} disabled={previewLoading}
-                className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-full hover:bg-emerald-500 disabled:opacity-60">
-          {previewLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />} Preview PDF
+    <>
+      <p aria-live="polite"
+         className={`h-5 mb-1.5 text-xs text-emerald-700 truncate transition-opacity duration-300 ${notice ? 'opacity-100' : 'opacity-0'}`}>
+        {notice}
+      </p>
+      <div className="flex justify-end gap-2">
+        {section === 'style' && (
+          <button onClick={openPreview} disabled={previewLoading}
+                  className="w-36 flex items-center justify-center gap-1.5 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-full hover:bg-emerald-500 disabled:opacity-60">
+            {previewLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />} Preview PDF
+          </button>
+        )}
+        <button onClick={save} disabled={saving}
+                className="w-24 flex items-center justify-center gap-1.5 py-2 bg-zinc-900 text-white text-sm font-semibold rounded-full hover:bg-zinc-700 disabled:opacity-60">
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
         </button>
-      )}
-      <button onClick={save} disabled={saving}
-              className="flex items-center gap-1.5 px-5 py-2 bg-zinc-900 text-white text-sm font-semibold rounded-full hover:bg-zinc-700 disabled:opacity-60">
-        {saving && <Loader2 className="w-4 h-4 animate-spin" />} Save
-      </button>
-    </div>
+      </div>
+    </>
   );
 
   const menuRow = (icon: React.ReactNode, title: string, sub: string, target: Section) => (
@@ -236,33 +248,77 @@ export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
                 <input type="file" accept="image/png,image/jpeg" hidden onChange={(e) => onLogo(e.target.files?.[0])} />
               </label>
             </div>
-            {notice && <p className="text-xs text-emerald-700 mb-3">{notice}</p>}
             {saveRow}
           </>
         ) : (
           <>
+            {/* the AI prompt leads; the dials below show exactly what it set,
+                and every one can be adjusted by hand */}
+            <label className="block mb-4">
+              <span className="flex items-center gap-1.5 text-xs text-zinc-500">
+                <Sparkles className="w-3.5 h-3.5" /> Describe your style — AI sets the dials below
+              </span>
+              <textarea className={field} rows={2}
+                        placeholder="e.g. light green background, all text 12pt, elegant serif"
+                        value={settings.style_request} onChange={(e) => set('style_request', e.target.value)} />
+            </label>
+
             <div className="mb-3 flex gap-2 flex-wrap">
               <button className={chip(settings.align === 'left')} onClick={() => set('align', 'left')}>Left aligned</button>
               <button className={chip(settings.align === 'center')} onClick={() => set('align', 'center')}>Centered</button>
-              <button className={chip(settings.font === 'serif')} onClick={() => set('font', 'serif')}>Serif</button>
-              <button className={chip(settings.font === 'sans')} onClick={() => set('font', 'sans')}>Sans</button>
             </div>
-            <label className="block mb-4">
+            <label className="block mb-3">
+              <span className="text-xs text-zinc-500">Font</span>
+              <select
+                value={settings.font}
+                onChange={(e) => set('font', e.target.value)}
+                className="mt-1 w-full bg-white border border-zinc-300 rounded-lg px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:border-zinc-500"
+              >
+                {(settings.font_options ?? [{ key: 'serif', label: 'Times (classic serif)' }]).map((f) => (
+                  <option key={f.key} value={f.key}>{f.label}</option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block mb-3">
+              <span className="flex justify-between text-xs text-zinc-500">
+                <span>Body text size</span><span>{settings.base_font_pt} pt</span>
+              </span>
+              <input type="range" min={8} max={16} step={0.5} value={settings.base_font_pt}
+                     onChange={(e) => set('base_font_pt', Number(e.target.value))}
+                     className="w-full mt-1.5 accent-zinc-900" />
+            </label>
+            <label className="block mb-3">
+              <span className="flex justify-between text-xs text-zinc-500">
+                <span>Artist name size</span><span>{settings.heading_font_pt} pt</span>
+              </span>
+              <input type="range" min={10} max={24} step={0.5} value={settings.heading_font_pt}
+                     onChange={(e) => set('heading_font_pt', Number(e.target.value))}
+                     className="w-full mt-1.5 accent-zinc-900" />
+            </label>
+            <label className="block mb-3">
               <span className="text-xs text-zinc-500">Image size on the page</span>
               <input type="range" min={0.6} max={1.25} step={0.05} value={settings.image_scale}
                      onChange={(e) => set('image_scale', Number(e.target.value))}
-                     className="w-full mt-2 accent-zinc-900" />
+                     className="w-full mt-1.5 accent-zinc-900" />
               <div className="flex justify-between text-[10px] text-zinc-400"><span>Intimate</span><span>Large</span></div>
             </label>
-            <label className="block mb-4">
-              <span className="flex items-center gap-1.5 text-xs text-zinc-500">
-                <Sparkles className="w-3.5 h-3.5" /> Describe your style in your own words — AI applies it
-              </span>
-              <textarea className={field} rows={2}
-                        placeholder="e.g. everything centered, larger images, headings in deep green"
-                        value={settings.style_request} onChange={(e) => set('style_request', e.target.value)} />
-            </label>
-            {notice && <p className="text-xs text-emerald-700 mb-3">{notice}</p>}
+
+            <div className="mb-4 grid grid-cols-3 gap-2">
+              {([
+                ['background_hex', 'Background'],
+                ['text_hex', 'Text'],
+                ['accent_hex', 'Accent'],
+              ] as const).map(([key, label]) => (
+                <label key={key} className="flex flex-col items-center gap-1 border border-zinc-200 rounded-xl py-2.5 cursor-pointer">
+                  <input type="color" value={settings[key] || '#ffffff'}
+                         onChange={(e) => set(key, e.target.value)}
+                         className="w-9 h-9 rounded-full border border-zinc-200 bg-transparent cursor-pointer" />
+                  <span className="text-[11px] text-zinc-500">{label}</span>
+                </label>
+              ))}
+            </div>
+
             {saveRow}
           </>
         )}

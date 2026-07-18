@@ -127,6 +127,15 @@ export const LibraryView: React.FC<Props> = ({
 
   const collectionName = (id: number) => collections.find((c) => c.id === id)?.name ?? '';
 
+  // the filter dropdown lists the collections you're actively using first
+  const dropdownCollections = useMemo(
+    () =>
+      [...collections].sort((a, b) =>
+        (b.last_added_at ?? b.created_at ?? '').localeCompare(a.last_added_at ?? a.created_at ?? ''),
+      ),
+    [collections],
+  );
+
   return (
     <div className="flex-1 flex flex-col min-h-0">
       {/* everything scrolls together — the controls simply slide off the top,
@@ -181,7 +190,7 @@ export const LibraryView: React.FC<Props> = ({
               className="flex-1 min-w-0 bg-transparent border border-zinc-200 text-zinc-500 text-[13px] rounded-full px-3 py-2 focus:outline-none"
             >
               <option value="">All collections</option>
-              {collections.map((c) => (
+              {dropdownCollections.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
@@ -198,7 +207,7 @@ export const LibraryView: React.FC<Props> = ({
             onClick={() => (selectMode ? exitSelect() : setSelectMode(true))}
             className={`text-[13px] rounded-full px-3.5 py-2 border shrink-0 ${selectMode ? 'bg-zinc-900 text-white border-zinc-900' : 'border-zinc-200 text-zinc-500'}`}
           >
-            {selectMode ? 'Done' : 'Select'}
+            {selectMode ? 'Done' : 'Organize'}
           </button>
         </div>
         {selectMode && nothingChecked && (
@@ -375,6 +384,7 @@ export const LibraryView: React.FC<Props> = ({
         <CollectionPicker
           title="Collections"
           subtitle="Rename with the pencil, delete with the trash — artworks are always kept."
+          sortable
           collections={collections}
           selected={filter === 'all' ? [] : [filter]}
           confirmLabel="Done"

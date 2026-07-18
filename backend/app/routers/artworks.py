@@ -69,6 +69,7 @@ def decide(artwork_id: int, body: Decision, db: Session = Depends(get_db)):
         for c in wanted:
             if c.id not in have:
                 art.collections.append(c)
+            c.last_added_at = datetime.utcnow()
     db.commit()
     return art.to_dict()
 
@@ -88,6 +89,8 @@ def bulk_collections(body: BulkCollections, db: Session = Depends(get_db)):
             art.collections.append(collection)
         elif body.action == "remove" and member:
             art.collections.remove(collection)
+    if body.action == "add" and arts:
+        collection.last_added_at = datetime.utcnow()
     db.commit()
     return {"updated": [a.id for a in arts], "collection_id": collection.id, "action": body.action}
 

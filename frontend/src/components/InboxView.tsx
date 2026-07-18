@@ -89,8 +89,26 @@ const SwipeRow: React.FC<{ onDelete: () => void; children: React.ReactNode }> = 
   );
 };
 
+type UploadSort = 'date' | 'gallery' | 'status';
+
 export const InboxView: React.FC<Props> = ({ uploads, reviewStats, onUploaded, onReview }) => {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [sort, setSort] = useState<UploadSort>('date');
+
+  // status rank: processing first, then unreviewed → partial → done
+  const statusRank = (u: UploadRecord) => {
+    if (u.status !== 'done') return -1;
+    const s = reviewStats[u.id];
+    if (!s || s.total === 0) return 3;
+    if (s.pending === s.total) return 0;
+    if (s.pending > 0) return 1;
+    return 2;
+  };
+  const sortedUploads = [...uploads].sort((a, b) => {
+    if (sort === 'gallery') return (a.gallery || '~').localeCompare(b.gallery || '~');
+    if (sort === 'status') return statusRank(a) - statusRank(b) || (b.created_at ?? '').localeCompare(a.created_at ?? '');
+    return (b.created_at ?? '').localeCompare(a.created_at ?? '');
+  });
   const [busy, setBusy] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [message, setMessage] = useState('');
@@ -154,12 +172,25 @@ export const InboxView: React.FC<Props> = ({ uploads, reviewStats, onUploaded, o
 
       {/* processed PDFs */}
       <div className="mt-5">
-        <h3 className="text-sm font-semibold text-zinc-900 mb-2">Received PDFs</h3>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-semibold text-zinc-900">Received PDFs</h3>
+          {uploads.length > 1 && (
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as UploadSort)}
+              className="bg-transparent border border-zinc-200 text-zinc-500 text-xs rounded-full px-2.5 py-1.5 focus:outline-none"
+            >
+              <option value="date">Newest first</option>
+              <option value="gallery">By gallery</option>
+              <option value="status">Unreviewed first</option>
+            </select>
+          )}
+        </div>
         {uploads.length === 0 ? (
           <p className="text-xs text-zinc-500">Nothing yet.</p>
         ) : (
           <div className="space-y-2">
-            {uploads.map((u) => {
+            {sortedUploads.map((u) => {
               const rs = u.status === 'done' ? reviewStatus(reviewStats[u.id]) : null;
               return (
               <SwipeRow key={u.id} onDelete={() => removeUpload(u)}>
