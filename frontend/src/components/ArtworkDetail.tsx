@@ -19,7 +19,8 @@ export const ArtworkDetail: React.FC<Props> = ({ artwork: a, collections, onEdit
     .filter(Boolean) as string[];
 
   return (
-    <div className="fixed inset-0 z-40 bg-white flex flex-col">
+    // tapping anywhere closes — the action buttons stop the tap from bubbling
+    <div className="fixed inset-0 z-40 bg-white flex flex-col" onClick={onClose}>
       <div
         className="shrink-0 flex items-center justify-between px-4 pb-2"
         style={{ paddingTop: 'calc(env(safe-area-inset-top) + 10px)' }}
@@ -70,10 +71,10 @@ export const ArtworkDetail: React.FC<Props> = ({ artwork: a, collections, onEdit
         </div>
 
         <div className="mt-5 flex gap-2">
-          <button onClick={onEdit} className="flex items-center gap-1.5 px-4 py-2 bg-zinc-100 border border-zinc-200 rounded-full text-sm text-zinc-700 hover:text-zinc-900">
+          <button onClick={(e) => { e.stopPropagation(); onEdit(); }} className="flex items-center gap-1.5 px-4 py-2 bg-zinc-100 border border-zinc-200 rounded-full text-sm text-zinc-700 hover:text-zinc-900">
             <Pencil className="w-4 h-4" /> Edit caption
           </button>
-          <button onClick={onSwap} className="flex items-center gap-1.5 px-4 py-2 bg-zinc-100 border border-zinc-200 rounded-full text-sm text-zinc-700 hover:text-zinc-900">
+          <button onClick={(e) => { e.stopPropagation(); onSwap(); }} className="flex items-center gap-1.5 px-4 py-2 bg-zinc-100 border border-zinc-200 rounded-full text-sm text-zinc-700 hover:text-zinc-900">
             <ArrowLeftRight className="w-4 h-4" /> {a.status === 'liked' ? 'Move to Passed' : 'Move to Selects'}
           </button>
         </div>
