@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeftRight, CheckCircle2, FileDown, FolderCog, FolderMinus, FolderPlus, Layers, Pencil } from 'lucide-react';
 import { api, mediaUrl } from '../lib/api';
 import type { Artwork, Collection } from '../types';
@@ -44,7 +44,23 @@ export const LibraryView: React.FC<Props> = ({
   const [picking, setPicking] = useState(false);
   const [managing, setManaging] = useState(false);
 
-  const actionBarOpen = selectMode && checked.length > 0;
+  // the action lozenge shows as soon as select mode starts (buttons disabled
+  // until something is ticked) so the mode explains itself before the first tap
+  const actionBarOpen = selectMode;
+  const nothingChecked = checked.length === 0;
+
+  // the collections row is sized to end exactly where the Passed/Selects
+  // slide ends — measured, so it tracks the slide's real width
+  const segRef = useRef<HTMLDivElement>(null);
+  const [segWidth, setSegWidth] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    const el = segRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setSegWidth(el.offsetWidth));
+    ro.observe(el);
+    setSegWidth(el.offsetWidth);
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
     // a deleted collection can't stay the active filter
@@ -116,12 +132,11 @@ export const LibraryView: React.FC<Props> = ({
       {/* everything scrolls together — the controls simply slide off the top,
           no animated collapse to glitch mid-scroll */}
       <div className={`flex-1 overflow-y-auto px-4 ${actionBarOpen ? 'pb-24' : 'pb-6'}`}>
-      {/* controls share grid columns so the collections row lines up exactly
-          under the Passed/Selects slide — the cog ends where the slide ends */}
-      <div className="grid grid-cols-[auto_1fr_auto] gap-x-2 gap-y-2 items-center pt-1 pb-2">
-          {/* segment control — Passed left / Selects right matches the swipe
-              directions; Passed is deliberately quieter, it's the safety net */}
-          <div className="flex items-center bg-zinc-100 rounded-full p-0.5 justify-self-start">
+      <div className="space-y-2 pt-1 pb-2">
+        <div className="flex items-center gap-2">
+          {/* the Passed/Selects slide is the page's main control — heavy on
+              purpose; the filter row below is deliberately quieter */}
+          <div ref={segRef} className="flex items-center bg-zinc-100 rounded-full p-1">
             {([
               ['passed', 'Passed', passedCount],
               ['liked', 'Selects', likedCount],
@@ -129,15 +144,15 @@ export const LibraryView: React.FC<Props> = ({
               <button
                 key={key}
                 onClick={() => { setSegment(key); exitSelect(); }}
-                className={`flex items-center gap-1.5 py-2 rounded-full ${
+                className={`flex items-center gap-1.5 py-2.5 rounded-full ${
                   key === 'passed'
-                    ? `px-3 text-xs ${segment === key ? 'bg-white shadow text-zinc-600 font-medium' : 'text-zinc-400'}`
-                    : `px-4 text-sm ${segment === key ? 'bg-white shadow text-zinc-900 font-semibold' : 'text-zinc-500'}`
+                    ? `px-3.5 text-[13px] ${segment === key ? 'bg-white shadow-md text-zinc-700 font-semibold' : 'text-zinc-400'}`
+                    : `px-5 text-[15px] ${segment === key ? 'bg-white shadow-md text-zinc-900 font-bold' : 'text-zinc-500 font-medium'}`
                 }`}
               >
                 {label}
                 {count > 0 && (
-                  <span className={`text-[10px] font-bold rounded-full min-w-[15px] h-[15px] px-1 flex items-center justify-center ${
+                  <span className={`text-[10px] font-bold rounded-full min-w-[16px] h-[16px] px-1 flex items-center justify-center ${
                     segment === key && key === 'liked' ? 'bg-zinc-900 text-white' : 'bg-zinc-200 text-zinc-600'
                   }`}>
                     {count}
@@ -146,25 +161,24 @@ export const LibraryView: React.FC<Props> = ({
               </button>
             ))}
           </div>
-          <div />
-          {segment === 'liked' && shown.length > 0 && !selectMode ? (
+          <div className="flex-1" />
+          {segment === 'liked' && shown.length > 0 && !selectMode && (
             <button
               onClick={() => setExporting(true)}
-              className="flex items-center gap-1.5 bg-emerald-600 text-white text-sm font-semibold rounded-full px-4 py-2 whitespace-nowrap justify-self-end hover:bg-emerald-500"
+              className="flex items-center gap-1.5 bg-emerald-600 text-white text-sm font-semibold rounded-full px-4 py-2 whitespace-nowrap shrink-0 hover:bg-emerald-500"
             >
               <FileDown className="w-4 h-4" />
               Export
             </button>
-          ) : (
-            <div />
           )}
-
-          {/* row 2 — stretches to the same width as the slide above */}
-          <div className="flex items-center gap-2 justify-self-stretch">
+        </div>
+        <div className="flex items-center gap-2">
+          {/* dropdown + cog together span exactly the slide's width */}
+          <div className="flex items-center gap-1.5" style={segWidth ? { width: segWidth } : undefined}>
             <select
               value={filter === 'all' ? '' : filter}
               onChange={(e) => setFilter(e.target.value ? Number(e.target.value) : 'all')}
-              className="flex-1 min-w-0 bg-zinc-100 border border-zinc-200 text-zinc-700 text-[15px] rounded-full px-4 py-2.5 focus:outline-none"
+              className="flex-1 min-w-0 bg-transparent border border-zinc-200 text-zinc-500 text-[13px] rounded-full px-3 py-2 focus:outline-none"
             >
               <option value="">All collections</option>
               {collections.map((c) => (
@@ -174,24 +188,22 @@ export const LibraryView: React.FC<Props> = ({
             <button
               title="Manage collections"
               onClick={() => setManaging(true)}
-              className="p-3 rounded-full bg-zinc-100 border border-zinc-200 text-zinc-500 hover:text-zinc-900 shrink-0"
+              className="p-2 rounded-full border border-zinc-200 text-zinc-400 hover:text-zinc-900 shrink-0"
             >
-              <FolderCog className="w-5 h-5" />
+              <FolderCog className="w-4 h-4" />
             </button>
           </div>
-          <div />
+          <div className="flex-1" />
           <button
             onClick={() => (selectMode ? exitSelect() : setSelectMode(true))}
-            className={`text-sm rounded-full px-4 py-2 border justify-self-end ${selectMode ? 'bg-zinc-900 text-white border-zinc-900' : 'border-zinc-300 text-zinc-600'}`}
+            className={`text-[13px] rounded-full px-3.5 py-2 border shrink-0 ${selectMode ? 'bg-zinc-900 text-white border-zinc-900' : 'border-zinc-200 text-zinc-500'}`}
           >
             {selectMode ? 'Done' : 'Select'}
           </button>
-
-          {selectMode && checked.length === 0 && (
-            <p className="col-span-3 text-xs text-zinc-400">
-              Tap works to select them — then add them to a collection, move them, or export.
-            </p>
-          )}
+        </div>
+        {selectMode && nothingChecked && (
+          <p className="text-xs text-zinc-400">Tap works to select them.</p>
+        )}
       </div>
 
       <div>
@@ -277,37 +289,48 @@ export const LibraryView: React.FC<Props> = ({
           up just above the permanent bottom nav */}
       {actionBarOpen && (
         <div className="absolute left-4 right-4 bottom-3 z-30 h-[52px] bg-white/95 backdrop-blur border border-zinc-200 shadow-[0_8px_24px_rgba(0,0,0,0.14)] rounded-full px-2 flex items-center justify-center gap-1 overflow-x-auto">
+          {/* count first, so "0" makes it obvious you tap works next */}
+          <span className={`text-xs font-bold rounded-full min-w-[24px] h-6 px-1.5 flex items-center justify-center shrink-0 ${
+            nothingChecked ? 'bg-zinc-100 text-zinc-400' : 'bg-zinc-900 text-white'
+          }`}>
+            {checked.length}
+          </span>
           <button
+            disabled={nothingChecked}
             onClick={() => setPicking(true)}
-            className="flex items-center gap-1.5 bg-zinc-900 text-white text-xs font-semibold rounded-full px-2.5 py-2 whitespace-nowrap shrink-0"
+            className="flex items-center gap-1.5 bg-zinc-900 text-white text-xs font-semibold rounded-full px-2.5 py-2 whitespace-nowrap shrink-0 disabled:opacity-35"
           >
             <FolderPlus className="w-3.5 h-3.5" /> Add
           </button>
           <button
+            disabled={nothingChecked}
             onClick={bulkSwap}
-            className="flex items-center gap-1.5 bg-zinc-100 text-zinc-700 text-xs font-semibold rounded-full px-2.5 py-2 whitespace-nowrap shrink-0"
+            className="flex items-center gap-1.5 bg-zinc-100 text-zinc-700 text-xs font-semibold rounded-full px-2.5 py-2 whitespace-nowrap shrink-0 disabled:opacity-35"
           >
             <ArrowLeftRight className="w-3.5 h-3.5" /> {segment === 'liked' ? 'Pass' : 'Select'}
           </button>
           <button
+            disabled={nothingChecked}
             onClick={bulkBackToDeck}
-            className="flex items-center gap-1.5 bg-zinc-100 text-zinc-700 text-xs font-semibold rounded-full px-2.5 py-2 whitespace-nowrap shrink-0"
+            className="flex items-center gap-1.5 bg-zinc-100 text-zinc-700 text-xs font-semibold rounded-full px-2.5 py-2 whitespace-nowrap shrink-0 disabled:opacity-35"
           >
             <Layers className="w-3.5 h-3.5" /> Re-deck
           </button>
           {filter !== 'all' && (
             <button
+              disabled={nothingChecked}
               title={`Remove from ${collectionName(filter)}`}
               onClick={bulkRemoveFromCollection}
-              className="flex items-center gap-1.5 bg-zinc-100 text-rose-600 text-xs font-semibold rounded-full px-2.5 py-2 whitespace-nowrap shrink-0"
+              className="flex items-center gap-1.5 bg-zinc-100 text-rose-600 text-xs font-semibold rounded-full px-2.5 py-2 whitespace-nowrap shrink-0 disabled:opacity-35"
             >
               <FolderMinus className="w-3.5 h-3.5" /> Remove
             </button>
           )}
           {segment === 'liked' && (
             <button
+              disabled={nothingChecked}
               onClick={() => setExportingChecked(true)}
-              className="flex items-center gap-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-full px-2.5 py-2 whitespace-nowrap shrink-0 ml-auto"
+              className="flex items-center gap-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-full px-2.5 py-2 whitespace-nowrap shrink-0 ml-auto disabled:opacity-35"
             >
               <FileDown className="w-3.5 h-3.5" /> Export
             </button>

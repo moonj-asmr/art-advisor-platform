@@ -14,10 +14,10 @@ interface Props {
  *  yellow = partly swiped, green = every work decided. */
 const reviewStatus = (stats?: { pending: number; total: number }) => {
   if (!stats || stats.total === 0) return null;
-  if (stats.pending === 0) return { dot: 'bg-emerald-500', text: 'text-emerald-700', label: 'Reviewed' };
-  if (stats.pending === stats.total) return { dot: 'bg-rose-500', text: 'text-rose-600', label: 'Not reviewed' };
+  if (stats.pending === 0) return { text: 'text-emerald-700', label: 'Reviewed — all works decided' };
+  if (stats.pending === stats.total)
+    return { text: 'text-rose-600', label: `Not reviewed — all ${stats.total} works in the deck` };
   return {
-    dot: 'bg-amber-400',
     text: 'text-amber-600',
     label: `${stats.total - stats.pending} of ${stats.total} reviewed`,
   };
@@ -154,7 +154,7 @@ export const InboxView: React.FC<Props> = ({ uploads, reviewStats, onUploaded, o
 
       {/* processed PDFs */}
       <div className="mt-5">
-        <h3 className="text-sm font-semibold text-zinc-900 mb-2">Processed PDFs</h3>
+        <h3 className="text-sm font-semibold text-zinc-900 mb-2">Received PDFs</h3>
         {uploads.length === 0 ? (
           <p className="text-xs text-zinc-500">Nothing yet.</p>
         ) : (
@@ -170,10 +170,7 @@ export const InboxView: React.FC<Props> = ({ uploads, reviewStats, onUploaded, o
                     <FileText className="w-5 h-5 text-zinc-400 shrink-0" />
                   )}
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      {rs && <span className={`w-2 h-2 rounded-full shrink-0 ${rs.dot}`} />}
-                      <span className="text-sm text-zinc-900 truncate">{u.filename}</span>
-                    </div>
+                    <div className="text-sm text-zinc-900 truncate">{u.filename}</div>
                     {u.status === 'processing' ? (
                       <div className="text-xs text-blue-600 truncate">AI is reading this PDF… you can keep working</div>
                     ) : u.status === 'failed' ? (
@@ -192,10 +189,14 @@ export const InboxView: React.FC<Props> = ({ uploads, reviewStats, onUploaded, o
                         </button>
                       </div>
                     ) : (
-                      <div className="text-xs text-zinc-500 truncate">
-                        {u.gallery || 'Unknown gallery'} · {formatDate(u.created_at)} · {u.artwork_count} works
-                        {rs && <span className={rs.text}> · {rs.label}</span>}
-                      </div>
+                      <>
+                        <div className="text-xs text-zinc-500 truncate">
+                          {u.gallery || 'Unknown gallery'} · {formatDate(u.created_at)} · {u.artwork_count} works
+                        </div>
+                        {rs && (
+                          <div className={`text-xs font-medium truncate ${rs.text}`}>{rs.label}</div>
+                        )}
+                      </>
                     )}
                   </div>
                   {editingId !== u.id && u.status === 'done' && (
