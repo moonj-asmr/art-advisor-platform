@@ -49,6 +49,21 @@ export const LibraryView: React.FC<Props> = ({
   const actionBarOpen = selectMode;
   const nothingChecked = checked.length === 0;
 
+  // one-time floating hint the very first time Organize is used — hovers over
+  // the grid without shifting any cards, gone forever after the first tap
+  const HINT_KEY = 'advisorydeck_organize_hint_seen';
+  const [showHint, setShowHint] = useState(false);
+  const enterSelectMode = () => {
+    setSelectMode(true);
+    if (!localStorage.getItem(HINT_KEY)) setShowHint(true);
+  };
+  useEffect(() => {
+    if (showHint && checked.length > 0) {
+      localStorage.setItem(HINT_KEY, '1');
+      setShowHint(false);
+    }
+  }, [checked, showHint]);
+
   // the collections row is sized to end exactly where the Passed/Selects
   // slide ends — measured, so it tracks the slide's real width
   const segRef = useRef<HTMLDivElement>(null);
@@ -80,6 +95,10 @@ export const LibraryView: React.FC<Props> = ({
   const exitSelect = () => {
     setSelectMode(false);
     setChecked([]);
+    if (showHint) {
+      localStorage.setItem(HINT_KEY, '1');
+      setShowHint(false);
+    }
   };
   const toggleCheck = (id: number) =>
     setChecked((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]));
@@ -177,7 +196,7 @@ export const LibraryView: React.FC<Props> = ({
               className="flex items-center gap-1.5 bg-emerald-600 text-white text-sm font-semibold rounded-full px-4 py-2 whitespace-nowrap shrink-0 hover:bg-emerald-500"
             >
               <FileDown className="w-4 h-4" />
-              Export
+              {filter === 'all' ? 'Export All' : 'Export'}
             </button>
           )}
         </div>
@@ -204,15 +223,12 @@ export const LibraryView: React.FC<Props> = ({
           </div>
           <div className="flex-1" />
           <button
-            onClick={() => (selectMode ? exitSelect() : setSelectMode(true))}
+            onClick={() => (selectMode ? exitSelect() : enterSelectMode())}
             className={`text-[13px] rounded-full px-3.5 py-2 border shrink-0 ${selectMode ? 'bg-zinc-900 text-white border-zinc-900' : 'border-zinc-200 text-zinc-500'}`}
           >
             {selectMode ? 'Done' : 'Organize'}
           </button>
         </div>
-        {selectMode && nothingChecked && (
-          <p className="text-xs text-zinc-400">Tap works to select them.</p>
-        )}
       </div>
 
       <div>
@@ -296,6 +312,11 @@ export const LibraryView: React.FC<Props> = ({
 
       {/* multi-select action lozenge — the one floating lozenge left, popping
           up just above the permanent bottom nav */}
+      {actionBarOpen && showHint && nothingChecked && (
+        <div className="absolute left-1/2 -translate-x-1/2 bottom-[4.6rem] z-30 bg-zinc-900 text-white text-xs rounded-full px-4 py-2 shadow-lg whitespace-nowrap">
+          Tap works to select them
+        </div>
+      )}
       {actionBarOpen && (
         <div className="absolute left-4 right-4 bottom-3 z-30 h-[52px] bg-white/95 backdrop-blur border border-zinc-200 shadow-[0_8px_24px_rgba(0,0,0,0.14)] rounded-full px-2 flex items-center justify-center gap-1 overflow-x-auto">
           {/* count first, so "0" makes it obvious you tap works next */}

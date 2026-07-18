@@ -160,29 +160,61 @@ def read_settings(db: Session = Depends(get_db)):
 
 @router.put("")
 def save_settings(body: SettingsPatch, db: Session = Depends(get_db)):
+    """Persist settings verbatim. The AI translation of style_request happens
+    in POST /style-request, explicitly — saving never restyles anything."""
     row = get_settings_row(db)
     updates = body.model_dump(exclude_none=True)
     style_request = updates.pop("style_request", None)
     for key, value in updates.items():
         setattr(row, key, value)
-
-    style_summary = ""
-    if style_request is not None and style_request.strip() and style_request.strip() != (row.style_request or "").strip():
+    if style_request is not None:
         row.style_request = style_request.strip()
-        if os.environ.get("ANTHROPIC_API_KEY"):
-            try:
-                style_summary = _apply_style_request(row, style_request.strip())
-            except Exception:
-                logger.exception("style request could not be applied")
-                style_summary = "Saved your request, but the AI could not apply it right now."
-    elif style_request is not None:
-        row.style_request = style_request.strip()
-
     db.commit()
-    result = row.to_dict()
-    if style_summary:
-        result["style_summary"] = style_summary
-    return result
+    return row.to_dict()
+
+
+class DialsBody(BaseModel):
+    """The dials as currently shown on screen — possibly unsaved."""
+
+    align: str | None = None
+    font: str | None = None
+    image_scale: float | None = None
+    accent_hex: str | None = None
+    background_hex: str | None = None
+    text_hex: str | None = None
+    base_font_pt: float | None = None
+    heading_font_pt: float | None = None
+
+
+class StyleRequestBody(DialsBody):
+    style_request: str
+
+
+DIAL_FIELDS = ("align", "font", "image_scale", "accent_hex", "background_hex",
+               "text_hex", "base_font_pt", "heading_font_pt")
+
+
+@router.post("/style-request")
+def run_style_request(body: StyleRequestBody, db: Session = Depends(get_db)):
+    """Translate the advisor's words into dial values and return them —
+    nothing is saved; the screen updates and the advisor previews/saves."""
+    if not body.style_request.strip():
+        raise HTTPException(400, "Describe the style first")
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        raise HTTPException(503, "AI styling needs the ANTHROPIC_API_KEY set on the server")
+    from types import SimpleNamespace
+
+    row = get_settings_row(db)
+    dials = SimpleNamespace(**{
+        f: getattr(body, f) if getattr(body, f) is not None else getattr(row, f)
+        for f in DIAL_FIELDS
+    })
+    try:
+        summary = _apply_style_request(dials, body.style_request.strip())
+    except Exception:
+        logger.exception("style request failed")
+        raise HTTPException(502, "The AI could not process that request right now — try again")
+    return {"summary": summary, "dials": {f: getattr(dials, f) for f in DIAL_FIELDS}}
 
 
 @router.post("/logo")
@@ -228,9 +260,11 @@ def _placeholder_artworks() -> list[dict]:
     }]
 
 
-def _build_preview_bytes(db: Session) -> bytes:
-    """A sample client PDF in the advisor's saved style."""
+def _build_preview_bytes(db: Session, overrides: dict | None = None) -> bytes:
+    """A sample client PDF — saved style, with any on-screen (unsaved) dial
+    values layered on top so Preview always shows what the advisor sees."""
     row = get_settings_row(db)
+    dial = lambda f: (overrides or {}).get(f) if (overrides or {}).get(f) is not None else getattr(row, f)  # noqa: E731
     liked = (
         db.query(Artwork).filter(Artwork.status == "liked")
         .order_by(Artwork.position, Artwork.id).limit(3).all()
@@ -243,22 +277,39 @@ def _build_preview_bytes(db: Session) -> bytes:
         if os.path.exists(candidate):
             logo_path = candidate
 
+    align = dial("align")
+    font = dial("font")
     style = StyleOptions(
         title="Style Preview",
         client_name="Sample Client",
         advisor_name=row.advisory_name,
         advisor_address=row.advisory_address,
-        align=row.align if row.align in ("left", "center") else "left",
-        image_scale=row.image_scale or 1.0,
-        font=row.font if row.font in FONT_FAMILIES else "serif",
-        accent_hex=row.accent_hex or "#1a1a1a",
-        background_hex=row.background_hex or "#ffffff",
-        text_hex=row.text_hex or "#262626",
-        base_font_pt=row.base_font_pt or 10.0,
-        heading_font_pt=row.heading_font_pt or 13.0,
+        align=align if align in ("left", "center") else "left",
+        image_scale=dial("image_scale") or 1.0,
+        font=font if font in FONT_FAMILIES else "serif",
+        accent_hex=dial("accent_hex") or "#1a1a1a",
+        background_hex=dial("background_hex") or "#ffffff",
+        text_hex=dial("text_hex") or "#262626",
+        base_font_pt=dial("base_font_pt") or 10.0,
+        heading_font_pt=dial("heading_font_pt") or 13.0,
         logo_path=logo_path,
     )
     return build_pdf(artworks, MEDIA_DIR, style)
+
+
+def _pdf_to_page_images(pdf_bytes: bytes) -> list[str]:
+    import base64
+
+    import fitz
+
+    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    pages = [
+        "data:image/png;base64,"
+        + base64.b64encode(page.get_pixmap(dpi=120).tobytes("png")).decode()
+        for page in doc
+    ]
+    doc.close()
+    return pages
 
 
 @router.get("/preview")
@@ -274,15 +325,11 @@ def preview_pdf(db: Session = Depends(get_db)):
 def preview_images(db: Session = Depends(get_db)):
     """The preview as page images — iPhone Safari can't scroll an embedded PDF,
     so the app shows these in its own overlay with a proper close button."""
-    import base64
+    return {"pages": _pdf_to_page_images(_build_preview_bytes(db))}
 
-    import fitz
 
-    doc = fitz.open(stream=_build_preview_bytes(db), filetype="pdf")
-    pages = [
-        "data:image/png;base64,"
-        + base64.b64encode(page.get_pixmap(dpi=120).tobytes("png")).decode()
-        for page in doc
-    ]
-    doc.close()
-    return {"pages": pages}
+@router.post("/preview/images")
+def preview_images_live(body: DialsBody | None = None, db: Session = Depends(get_db)):
+    """Preview with the dials exactly as shown on screen — no save required."""
+    overrides = {f: getattr(body, f) for f in DIAL_FIELDS} if body else None
+    return {"pages": _pdf_to_page_images(_build_preview_bytes(db, overrides))}

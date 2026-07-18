@@ -81,18 +81,16 @@ export const CollectionPicker: React.FC<Props> = ({
   return (
     <Sheet title={title} subtitle={subtitle} onClose={onClose}>
         {sortable && collections.length > 1 && (
-          <div className="flex gap-1.5 mb-3">
-            {SORTS.map(([key, label]) => (
-              <button
-                key={key}
-                onClick={() => setSort(key)}
-                className={`px-3 py-1.5 rounded-full text-xs border ${
-                  sort === key ? 'bg-zinc-900 text-white border-zinc-900 font-medium' : 'border-zinc-200 text-zinc-500'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
+          <div className="flex justify-end mb-3">
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortKey)}
+              className="bg-transparent border border-zinc-200 text-zinc-500 text-xs rounded-full px-2.5 py-1.5 focus:outline-none"
+            >
+              {SORTS.map(([key, label]) => (
+                <option key={key} value={key}>Sort: {label}</option>
+              ))}
+            </select>
           </div>
         )}
         <div className="space-y-1.5 mb-4">

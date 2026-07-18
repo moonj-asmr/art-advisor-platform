@@ -183,16 +183,18 @@ def build_pdf(artworks: List[dict], media_dir: str, style: StyleOptions) -> byte
                                 fontsize=size, color=color, align=text_align, **face)
             y += h
 
+        # the whole caption uses the advisor's caption-text color at full
+        # strength — no auto-muting, so the color dial does what it says
         line(art.get("artist", ""), faces.bold, heading, accent, heading + 6)
         title_year = art.get("title", "")
         if art.get("year"):
             title_year = f"{title_year}, {art['year']}" if title_year else art["year"]
         line(title_year, faces.italic, base * 1.15, body, base * 1.15 + 5.5)
-        line(art.get("medium", ""), faces.reg, base, grey, base + 5)
+        line(art.get("medium", ""), faces.reg, base, body, base + 5)
         dims_ed = " · ".join(x for x in [art.get("dimensions", ""), art.get("edition", "")] if x)
-        line(dims_ed, faces.reg, base, grey, base + 5)
+        line(dims_ed, faces.reg, base, body, base + 5)
         if style.show_gallery and art.get("gallery"):
-            line(art["gallery"], faces.reg, base, grey, base + 5)
+            line(art["gallery"], faces.reg, base, body, base + 5)
         if style.show_price and art.get("price"):
             y += 4
             line(art["price"], faces.bold, base * 1.1, accent, base * 1.1 + 6)
