@@ -92,6 +92,13 @@ export const api = {
 
   getSettings: () => fetch(`${BASE}/api/settings`).then((r) => json<AdvisorSettings>(r)),
 
+  login: (email: string, password: string) =>
+    fetch(`${BASE}/api/settings/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    }).then((r) => json<{ ok: boolean; created: boolean; email: string }>(r)),
+
   saveSettings: (patch: Partial<AdvisorSettings>) =>
     fetch(`${BASE}/api/settings`, {
       method: 'PUT',

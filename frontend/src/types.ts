@@ -49,6 +49,7 @@ export interface ExportOptions {
 
 export interface AdvisorSettings {
   email: string;
+  has_password: boolean;
   advisory_name: string;
   advisory_address: string;
   logo_media: string;

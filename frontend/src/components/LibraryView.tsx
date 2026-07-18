@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowLeftRight, CheckCircle2, FileDown, FolderCog, FolderPlus, Layers, Pencil } from 'lucide-react';
 import { api, mediaUrl } from '../lib/api';
 import type { Artwork, Collection } from '../types';
@@ -41,7 +41,6 @@ export const LibraryView: React.FC<Props> = ({
   const [exportingChecked, setExportingChecked] = useState(false);
   const [picking, setPicking] = useState(false);
   const [managing, setManaging] = useState(false);
-  const lastY = useRef(0);
 
   const actionBarOpen = selectMode && checked.length > 0;
 
@@ -49,17 +48,6 @@ export const LibraryView: React.FC<Props> = ({
     // a deleted collection can't stay the active filter
     if (filter !== 'all' && !collections.some((c) => c.id === filter)) setFilter('all');
   }, [collections, filter]);
-
-  // top controls hide on scroll-down, jog back on scroll-up (the bottom nav stays put)
-  const [controlsVisible, setControlsVisible] = useState(true);
-  const onScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    if (actionBarOpen) return;
-    const y = e.currentTarget.scrollTop;
-    if (y < 24) setControlsVisible(true);
-    else if (y - lastY.current > 6) setControlsVisible(false);
-    else if (lastY.current - y > 6) setControlsVisible(true);
-    lastY.current = y;
-  };
 
   const shown = useMemo(
     () =>
@@ -114,12 +102,10 @@ export const LibraryView: React.FC<Props> = ({
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
-      {/* controls — hide on scroll-down, reappear on scroll-up */}
-      <div
-        className={`px-4 space-y-2 transition-all duration-300 overflow-hidden ${
-          controlsVisible ? 'max-h-40 opacity-100 pt-1 pb-2' : 'max-h-0 opacity-0 pt-0 pb-0'
-        }`}
-      >
+      {/* everything scrolls together — the controls simply slide off the top,
+          no animated collapse to glitch mid-scroll */}
+      <div className={`flex-1 overflow-y-auto px-4 ${actionBarOpen ? 'pb-24' : 'pb-6'}`}>
+      <div className="space-y-2 pt-1 pb-2">
         <div className="flex items-center gap-2">
           {/* segment control — Passed on the left, Selected on the right,
               matching swipe-left / swipe-right */}
@@ -145,12 +131,15 @@ export const LibraryView: React.FC<Props> = ({
             ))}
           </div>
           <div className="flex-1" />
-          <button
-            onClick={() => (selectMode ? exitSelect() : setSelectMode(true))}
-            className={`text-sm rounded-full px-4 py-2 border ${selectMode ? 'bg-zinc-900 text-white border-zinc-900' : 'border-zinc-300 text-zinc-600'}`}
-          >
-            {selectMode ? 'Done' : 'Select'}
-          </button>
+          {segment === 'liked' && shown.length > 0 && !selectMode && (
+            <button
+              onClick={() => setExporting(true)}
+              className="flex items-center gap-1.5 bg-emerald-600 text-white text-sm font-semibold rounded-full px-4 py-2 hover:bg-emerald-500"
+            >
+              <FileDown className="w-4 h-4" />
+              Export {filter !== 'all' ? collectionName(filter) : 'PDF'}
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <select
@@ -171,20 +160,16 @@ export const LibraryView: React.FC<Props> = ({
             <FolderCog className="w-4 h-4" />
           </button>
           <div className="flex-1" />
-          {segment === 'liked' && shown.length > 0 && !selectMode && (
-            <button
-              onClick={() => setExporting(true)}
-              className="flex items-center gap-1.5 bg-emerald-600 text-white text-sm font-semibold rounded-full px-4 py-2 hover:bg-emerald-500"
-            >
-              <FileDown className="w-4 h-4" />
-              Export {filter !== 'all' ? collectionName(filter) : 'PDF'}
-            </button>
-          )}
+          <button
+            onClick={() => (selectMode ? exitSelect() : setSelectMode(true))}
+            className={`text-sm rounded-full px-4 py-2 border ${selectMode ? 'bg-zinc-900 text-white border-zinc-900' : 'border-zinc-300 text-zinc-600'}`}
+          >
+            {selectMode ? 'Done' : 'Select'}
+          </button>
         </div>
       </div>
 
-      {/* grid — extra bottom room only while the select lozenge floats over it */}
-      <div className={`flex-1 overflow-y-auto px-4 ${actionBarOpen ? 'pb-24' : 'pb-6'}`} onScroll={onScroll}>
+      <div>
         {shown.length === 0 ? (
           <div className="text-center text-sm text-zinc-400 pt-16 px-8">
             {segment === 'liked'
@@ -251,6 +236,7 @@ export const LibraryView: React.FC<Props> = ({
             })}
           </div>
         )}
+      </div>
       </div>
 
       {/* multi-select action lozenge — the one floating lozenge left, popping

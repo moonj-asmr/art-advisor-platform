@@ -11,18 +11,51 @@ interface Props {
 /** Everything about the advisor's account and house style. What is saved here
  *  prints on every exported client PDF — the export sheet only asks for
  *  per-client choices. */
+const USER_KEY = 'advisorydeck_user';
+
 export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
   const [settings, setSettings] = useState<AdvisorSettings | null>(null);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState('');
+  // login: signed-in email is remembered on this device
+  const [signedInAs, setSignedInAs] = useState<string | null>(() => localStorage.getItem(USER_KEY));
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loggingIn, setLoggingIn] = useState(false);
   // preview shown in-app as page images — with a proper X to get out —
   // because Safari's own PDF view has no obvious way back
   const [previewPages, setPreviewPages] = useState<string[] | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
 
   useEffect(() => {
-    api.getSettings().then(setSettings).catch(() => setNotice('Could not load settings.'));
+    api.getSettings().then((s) => {
+      setSettings(s);
+      setLoginEmail((prev) => prev || s.email);
+    }).catch(() => setNotice('Could not load settings.'));
   }, []);
+
+  const doLogin = async () => {
+    setLoggingIn(true);
+    setNotice('');
+    try {
+      const res = await api.login(loginEmail.trim(), loginPassword);
+      localStorage.setItem(USER_KEY, res.email);
+      setSignedInAs(res.email);
+      setLoginPassword('');
+      setSettings((s) => (s ? { ...s, email: res.email, has_password: true } : s));
+      setNotice(res.created ? 'Login created — use it on your next visit.' : 'Logged in.');
+    } catch {
+      setNotice('Wrong email or password.');
+    } finally {
+      setLoggingIn(false);
+    }
+  };
+
+  const doLogout = () => {
+    localStorage.removeItem(USER_KEY);
+    setSignedInAs(null);
+    setNotice('Logged out.');
+  };
 
   const set = <K extends keyof AdvisorSettings>(key: K, value: AdvisorSettings[K]) =>
     setSettings((s) => (s ? { ...s, [key]: value } : s));
@@ -33,7 +66,6 @@ export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
     setNotice('');
     try {
       const saved = await api.saveSettings({
-        email: settings.email,
         advisory_name: settings.advisory_name,
         advisory_address: settings.advisory_address,
         align: settings.align,
@@ -91,11 +123,41 @@ export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
         ) : (
           <>
             <div className={label}>Account</div>
-            <label className="block mt-2 mb-4">
-              <span className="text-xs text-zinc-500">Email (your login)</span>
-              <input className={field} type="email" placeholder="you@advisory.com"
-                     value={settings.email} onChange={(e) => set('email', e.target.value)} />
-            </label>
+            {signedInAs ? (
+              <div className="mt-2 mb-4 flex items-center gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm text-zinc-900 truncate">{signedInAs}</div>
+                  <div className="text-xs text-zinc-500">Logged in</div>
+                </div>
+                <button onClick={doLogout}
+                        className="shrink-0 px-3.5 py-2 bg-zinc-100 border border-zinc-200 rounded-full text-sm text-zinc-700 hover:text-zinc-900">
+                  Log out
+                </button>
+              </div>
+            ) : (
+              <div className="mt-2 mb-4">
+                <label className="block mb-2">
+                  <span className="text-xs text-zinc-500">Email</span>
+                  <input className={field} type="email" autoComplete="email" placeholder="you@advisory.com"
+                         value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
+                </label>
+                <label className="block mb-2">
+                  <span className="text-xs text-zinc-500">Password</span>
+                  <input className={field} type="password" autoComplete="current-password" placeholder="••••••••"
+                         value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)}
+                         onKeyDown={(e) => e.key === 'Enter' && doLogin()} />
+                </label>
+                <div className="flex items-center gap-2">
+                  <button onClick={doLogin} disabled={loggingIn || !loginEmail.trim() || !loginPassword}
+                          className="px-4 py-2 bg-zinc-900 text-white text-sm font-semibold rounded-full hover:bg-zinc-700 disabled:opacity-50">
+                    {loggingIn ? 'Logging in…' : settings.has_password ? 'Log in' : 'Create login'}
+                  </button>
+                  {!settings.has_password && (
+                    <span className="text-[11px] text-zinc-400">First time? This creates your login.</span>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className={label}>Organization</div>
             <label className="block mt-2 mb-3">
@@ -149,14 +211,14 @@ export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
 
             {notice && <p className="text-xs text-emerald-700 mb-3">{notice}</p>}
 
-            <div className="flex gap-2">
-              <button onClick={save} disabled={saving}
-                      className="flex-1 flex items-center justify-center gap-2 bg-zinc-900 text-white font-semibold rounded-full py-3 hover:bg-zinc-700 disabled:opacity-60">
-                {saving && <Loader2 className="w-4 h-4 animate-spin" />} Save
-              </button>
+            <div className="flex justify-end gap-2">
               <button onClick={openPreview} disabled={previewLoading}
-                      className="flex items-center justify-center gap-2 px-4 bg-emerald-600 text-white font-semibold rounded-full py-3 hover:bg-emerald-500 disabled:opacity-60">
+                      className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-full hover:bg-emerald-500 disabled:opacity-60">
                 {previewLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />} Preview PDF
+              </button>
+              <button onClick={save} disabled={saving}
+                      className="flex items-center gap-1.5 px-5 py-2 bg-zinc-900 text-white text-sm font-semibold rounded-full hover:bg-zinc-700 disabled:opacity-60">
+                {saving && <Loader2 className="w-4 h-4 animate-spin" />} Save
               </button>
             </div>
           </>

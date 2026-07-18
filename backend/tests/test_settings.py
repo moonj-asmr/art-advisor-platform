@@ -56,6 +56,21 @@ def test_settings_preview_renders_pdf_with_house_style():
     doc.close()
 
 
+def test_login_first_use_creates_account_then_verifies():
+    # first login registers the credentials
+    r = client.post("/api/settings/login", json={"email": "Advisor@Example.com", "password": "hunter2"})
+    assert r.status_code == 200 and r.json()["created"] is True
+    assert client.get("/api/settings").json()["has_password"] is True
+
+    # correct password logs in, wrong one is rejected
+    ok = client.post("/api/settings/login", json={"email": "advisor@example.com", "password": "hunter2"})
+    assert ok.status_code == 200 and ok.json()["created"] is False
+    bad = client.post("/api/settings/login", json={"email": "advisor@example.com", "password": "nope"})
+    assert bad.status_code == 401
+    wrong_email = client.post("/api/settings/login", json={"email": "other@example.com", "password": "hunter2"})
+    assert wrong_email.status_code == 401
+
+
 def test_settings_preview_images_for_in_app_viewer():
     r = client.get("/api/settings/preview/images")
     assert r.status_code == 200

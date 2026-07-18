@@ -53,6 +53,7 @@ class Settings(Base):
 
     id = Column(Integer, primary_key=True)
     email = Column(String, default="")
+    password_hash = Column(String, default="")  # empty until the advisor creates a login
     advisory_name = Column(String, default="")
     advisory_address = Column(Text, default="")
     logo_media = Column(String, default="")
@@ -65,6 +66,7 @@ class Settings(Base):
     def to_dict(self):
         return {
             "email": self.email,
+            "has_password": bool(self.password_hash),
             "advisory_name": self.advisory_name,
             "advisory_address": self.advisory_address,
             "logo_media": self.logo_media,
