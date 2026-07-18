@@ -28,8 +28,14 @@ def uploaded():
 
 
 def test_upload_extracts_artworks(uploaded):
-    assert uploaded["artworks_found"] == 6
+    # the response returns immediately; TestClient runs the background task
+    # before handing control back, so by now processing has finished
+    assert uploaded["status"] == "processing"
     assert uploaded["page_count"] == 7
+    rows = client.get("/api/uploads").json()
+    mine = next(u for u in rows if u["id"] == uploaded["upload_id"])
+    assert mine["status"] == "done"
+    assert mine["artwork_count"] == 6
 
 
 def test_deck_and_swipe_flow(uploaded):
@@ -121,12 +127,14 @@ def test_media_served(uploaded):
 def test_export_pdf(uploaded):
     liked = client.get("/api/artworks").json()[:3]
     ids = [a["id"] for a in liked]
+    # the advisory identity comes from Settings, not from the export request
+    r = client.put("/api/settings", json={"advisory_name": "Britt Art Advisory",
+                                          "advisory_address": "12 Rue de Seine, Paris"})
+    assert r.status_code == 200
     r = client.post("/api/export", json={
         "artwork_ids": ids,
         "title": "Spring Selections",
         "client_name": "Alice Chen",
-        "advisor_name": "Britt Art Advisory",
-        "align": "left",
         "show_price": True,
         "notes": {str(ids[0]): "Strong early work — museum interest in this series."},
     })

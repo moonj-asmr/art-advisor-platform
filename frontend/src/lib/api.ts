@@ -1,4 +1,4 @@
-import type { Artwork, Collection, ExportOptions, UploadRecord } from '../types';
+import type { AdvisorSettings, Artwork, Collection, ExportOptions, UploadRecord } from '../types';
 
 const BASE = import.meta.env.VITE_API_URL || '';
 
@@ -86,17 +86,28 @@ export const api = {
     if (collectionId != null) form.append('collection_id', String(collectionId));
     if (gallery) form.append('gallery', gallery);
     return fetch(`${BASE}/api/uploads`, { method: 'POST', body: form }).then((r) =>
-      json<{ upload_id: number; artworks_found: number; gallery: string; engine: 'ai' | 'basic' }>(r),
+      json<{ upload_id: number; status: 'processing' }>(r),
     );
   },
 
-  uploadLogo: (file: File) => {
+  getSettings: () => fetch(`${BASE}/api/settings`).then((r) => json<AdvisorSettings>(r)),
+
+  saveSettings: (patch: Partial<AdvisorSettings>) =>
+    fetch(`${BASE}/api/settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(patch),
+    }).then((r) => json<AdvisorSettings>(r)),
+
+  uploadAdvisoryLogo: (file: File) => {
     const form = new FormData();
     form.append('file', file);
-    return fetch(`${BASE}/api/export/logo`, { method: 'POST', body: form }).then((r) =>
-      json<{ logo_media: string }>(r),
+    return fetch(`${BASE}/api/settings/logo`, { method: 'POST', body: form }).then((r) =>
+      json<{ logo_media: string; logo_url: string }>(r),
     );
   },
+
+  settingsPreviewUrl: () => `${BASE}/api/settings/preview`,
 
   exportPdf: async (artworkIds: number[], opts: ExportOptions): Promise<Blob> => {
     const res = await fetch(`${BASE}/api/export`, {

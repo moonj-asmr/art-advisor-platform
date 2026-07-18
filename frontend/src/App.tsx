@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ChevronDown, Heart, Inbox, Layers } from 'lucide-react';
+import { ChevronDown, Heart, Inbox, Layers, Settings } from 'lucide-react';
 import { api } from './lib/api';
 import type { Artwork, Collection, UploadRecord } from './types';
 import { CollectionPicker } from './components/CollectionPicker';
 import { DeckView } from './components/DeckView';
 import { InboxView } from './components/InboxView';
 import { LibraryView } from './components/LibraryView';
+import { SettingsSheet } from './components/SettingsSheet';
 
 type Tab = 'deck' | 'library' | 'inbox';
 
@@ -17,6 +18,7 @@ function App() {
   // collections that right-swipes are allocated into right now
   const [allocation, setAllocation] = useState<number[]>([]);
   const [pickingAllocation, setPickingAllocation] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [loaded, setLoaded] = useState(false);
   // floating nav hides on scroll-down, jogs back on scroll-up
   const [navVisible, setNavVisible] = useState(true);
@@ -37,6 +39,15 @@ function App() {
   useEffect(() => {
     reload();
   }, [reload]);
+
+  // while any PDF is still being read by the AI, keep the app in sync —
+  // regardless of which tab the advisor is on
+  const anyProcessing = uploads.some((u) => u.status === 'processing');
+  useEffect(() => {
+    if (!anyProcessing) return;
+    const timer = setInterval(reload, 3500);
+    return () => clearInterval(timer);
+  }, [anyProcessing, reload]);
 
   useEffect(() => {
     setNavVisible(true); // switching tabs always brings the nav back
@@ -88,12 +99,12 @@ function App() {
           .join(', ');
 
   return (
-    <div className="h-dvh bg-white text-zinc-900 flex flex-col max-w-md mx-auto sm:border-x sm:border-zinc-200 relative overflow-hidden">
+    <div className="h-full bg-white text-zinc-900 flex flex-col max-w-md mx-auto sm:border-x sm:border-zinc-200 relative overflow-hidden">
       {/* header: app name + (on deck) where right-swipes are going */}
       <header className="px-4" style={{ paddingTop: 'max(env(safe-area-inset-top), 1rem)' }}>
         {/* fixed-height row so the wordmark sits identically on every tab */}
         <div className="h-10 flex items-center justify-between gap-3">
-          <h1 className="font-semibold tracking-tight text-lg leading-none text-blue-900">Advisory<span className="text-blue-500">Deck</span></h1>
+          <h1 className="font-serif font-semibold tracking-tight text-xl leading-none text-zinc-950">Advisory<span className="text-blue-900">Deck</span></h1>
           {tab === 'deck' && (
             <button
               onClick={() => setPickingAllocation(true)}
@@ -101,6 +112,15 @@ function App() {
             >
               <span className="truncate">Selecting for: <span className="text-zinc-900 font-medium">{allocationLabel}</span></span>
               <ChevronDown className="w-4 h-4 shrink-0" />
+            </button>
+          )}
+          {tab === 'inbox' && (
+            <button
+              aria-label="Settings"
+              onClick={() => setShowSettings(true)}
+              className="p-2.5 rounded-full bg-zinc-100 border border-zinc-200 text-zinc-600 hover:text-zinc-900"
+            >
+              <Settings className="w-5 h-5" />
             </button>
           )}
         </div>
@@ -169,6 +189,8 @@ function App() {
           </button>
         ))}
       </nav>
+
+      {showSettings && <SettingsSheet onClose={() => setShowSettings(false)} />}
 
       {pickingAllocation && (
         <CollectionPicker

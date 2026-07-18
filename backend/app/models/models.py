@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import JSON, Column, DateTime, ForeignKey, Integer, String, Table, Text
+from sqlalchemy import JSON, Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Table, Text
 from sqlalchemy.orm import relationship
 
 from .database import Base
@@ -39,10 +39,42 @@ class Upload(Base):
     gallery = Column(String, default="")
     page_count = Column(Integer, default=0)
     collection_id = Column(Integer, ForeignKey("collections.id"), nullable=True)
+    status = Column(String, default="done")  # processing | done | failed
     created_at = Column(DateTime, default=datetime.utcnow)
 
     collection = relationship("Collection", back_populates="uploads")
     artworks = relationship("Artwork", back_populates="upload", cascade="all, delete-orphan")
+
+
+class Settings(Base):
+    """The advisor's account and house style — single row, feeds every export."""
+
+    __tablename__ = "settings"
+
+    id = Column(Integer, primary_key=True)
+    email = Column(String, default="")
+    advisory_name = Column(String, default="")
+    advisory_address = Column(Text, default="")
+    logo_media = Column(String, default="")
+    align = Column(String, default="left")
+    font = Column(String, default="serif")
+    accent_hex = Column(String, default="#1a1a1a")
+    image_scale = Column(Float, default=1.0)
+    style_request = Column(Text, default="")  # the advisor's own words, kept for reference
+
+    def to_dict(self):
+        return {
+            "email": self.email,
+            "advisory_name": self.advisory_name,
+            "advisory_address": self.advisory_address,
+            "logo_media": self.logo_media,
+            "logo_url": f"/media/{self.logo_media}" if self.logo_media else None,
+            "align": self.align,
+            "font": self.font,
+            "accent_hex": self.accent_hex,
+            "image_scale": self.image_scale,
+            "style_request": self.style_request,
+        }
 
 
 class Artwork(Base):
