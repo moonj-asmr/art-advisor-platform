@@ -99,25 +99,25 @@ function App() {
         {/* fixed-height row so the wordmark sits identically on every tab */}
         <div className="h-10 flex items-center justify-between gap-3">
           <h1 className="font-serif font-semibold tracking-tight text-xl leading-none text-zinc-950">Advisory<span className="text-blue-900">Deck</span></h1>
-          <div className="flex items-center gap-2 min-w-0">
-            {tab === 'deck' && (
-              <button
-                onClick={() => setPickingAllocation(true)}
-                className="flex items-center gap-1.5 bg-zinc-100 border border-zinc-200 text-zinc-600 text-sm rounded-full pl-4 pr-2.5 py-2 min-w-0"
-              >
-                <span className="truncate">Selecting for: <span className="text-zinc-900 font-medium">{allocationLabel}</span></span>
-                <ChevronDown className="w-4 h-4 shrink-0" />
-              </button>
-            )}
-            {/* settings is reachable from every tab */}
+          {tab === 'deck' && (
+            <button
+              onClick={() => setPickingAllocation(true)}
+              className="flex items-center gap-1.5 bg-zinc-100 border border-zinc-200 text-zinc-600 text-sm rounded-full pl-4 pr-2.5 py-2 max-w-[58%]"
+            >
+              <span className="truncate">Selecting for: <span className="text-zinc-900 font-medium">{allocationLabel}</span></span>
+              <ChevronDown className="w-4 h-4 shrink-0" />
+            </button>
+          )}
+          {/* settings lives with the app's housekeeping — the Inbox */}
+          {tab === 'inbox' && (
             <button
               aria-label="Settings"
               onClick={() => setShowSettings(true)}
-              className="p-2.5 rounded-full bg-zinc-100 border border-zinc-200 text-zinc-600 hover:text-zinc-900 shrink-0"
+              className="p-2.5 rounded-full bg-zinc-100 border border-zinc-200 text-zinc-600 hover:text-zinc-900"
             >
               <Settings className="w-5 h-5" />
             </button>
-          </div>
+          )}
         </div>
         <div className="h-2" />
       </header>
@@ -152,8 +152,8 @@ function App() {
       {/* permanent bottom nav — sits at the very bottom of the screen, with
           the iOS home indicator overlapping the tab pills themselves */}
       <nav
-        className="shrink-0 z-30 bg-white rounded-t-2xl shadow-[0_-4px_16px_rgba(0,0,0,0.07)] flex items-center gap-1 px-3 pt-1"
-        style={{ paddingBottom: 'max(calc(env(safe-area-inset-bottom) - 30px), 0.15rem)' }}
+        className="shrink-0 z-30 bg-white rounded-t-2xl shadow-[0_-4px_16px_rgba(0,0,0,0.07)] flex items-center gap-1 px-3 pt-1.5"
+        style={{ paddingBottom: 'max(calc(env(safe-area-inset-bottom) - 26px), 0.3rem)' }}
       >
         {([
           ['deck', Layers, 'Deck', pending.length],
@@ -163,7 +163,7 @@ function App() {
           <button
             key={key}
             onClick={() => setTab(key)}
-            className={`relative flex-1 h-9 flex items-center justify-center gap-1.5 text-xs rounded-full ${
+            className={`relative flex-1 h-11 flex items-center justify-center gap-1.5 text-[13px] rounded-full ${
               tab === key ? 'bg-zinc-900 text-white font-medium' : 'text-zinc-500'
             }`}
           >
