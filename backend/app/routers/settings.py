@@ -88,6 +88,41 @@ def _apply_style_request(row: Settings, request_text: str) -> str:
     return data.get("summary", "Style updated.")
 
 
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+def _hash_password(password: str, salt: str | None = None) -> str:
+    import hashlib
+    import secrets
+
+    salt = salt or secrets.token_hex(16)
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode(), bytes.fromhex(salt), 200_000)
+    return f"{salt}${digest.hex()}"
+
+
+@router.post("/login")
+def login(body: LoginRequest, db: Session = Depends(get_db)):
+    """Single-advisor login. The first login creates the account; after that
+    the stored password must match."""
+    email = body.email.strip().lower()
+    if not email or not body.password:
+        raise HTTPException(400, "Email and password are required")
+    row = get_settings_row(db)
+    if not row.password_hash:
+        row.email = email
+        row.password_hash = _hash_password(body.password)
+        db.commit()
+        return {"ok": True, "created": True, "email": email}
+    salt = row.password_hash.split("$", 1)[0]
+    if _hash_password(body.password, salt) != row.password_hash:
+        raise HTTPException(401, "Wrong email or password")
+    if email != (row.email or "").strip().lower():
+        raise HTTPException(401, "Wrong email or password")
+    return {"ok": True, "created": False, "email": email}
+
+
 @router.get("")
 def read_settings(db: Session = Depends(get_db)):
     return get_settings_row(db).to_dict()

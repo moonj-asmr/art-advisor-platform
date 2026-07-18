@@ -26,6 +26,19 @@ def _migrate_add_upload_status():
 _migrate_add_upload_status()
 
 
+def _migrate_add_settings_password():
+    from sqlalchemy import text
+
+    try:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE settings ADD COLUMN password_hash VARCHAR DEFAULT ''"))
+    except Exception:
+        pass  # column already exists
+
+
+_migrate_add_settings_password()
+
+
 def _migrate_legacy_collection_stamps():
     """Artworks used to carry a single collection_id; membership now lives in
     the artwork_collections table. Carry old stamps over once."""
