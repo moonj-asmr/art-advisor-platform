@@ -134,10 +134,10 @@ export const LibraryView: React.FC<Props> = ({
           {segment === 'liked' && shown.length > 0 && !selectMode && (
             <button
               onClick={() => setExporting(true)}
-              className="flex items-center gap-1.5 bg-emerald-600 text-white text-sm font-semibold rounded-full px-4 py-2 hover:bg-emerald-500"
+              className="flex items-center gap-1.5 bg-emerald-600 text-white text-sm font-semibold rounded-full px-4 py-2 whitespace-nowrap shrink-0 hover:bg-emerald-500"
             >
               <FileDown className="w-4 h-4" />
-              Export {filter !== 'all' ? collectionName(filter) : 'PDF'}
+              Export
             </button>
           )}
         </div>
