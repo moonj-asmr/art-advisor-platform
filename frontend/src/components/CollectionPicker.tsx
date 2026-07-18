@@ -22,8 +22,9 @@ interface Props {
   collections: Collection[];
   selected: number[];
   confirmLabel: string;
-  includeGeneral?: boolean; // show a "General" row that means "no collection"
+  includeGeneral?: boolean; // show a "No collection" row (the default state)
   sortable?: boolean; // show the sort toggle (the manage-collections sheet)
+  manageMode?: boolean; // dots select collections for bulk delete instead of picking
   onConfirm: (ids: number[]) => void;
   onCreate: (name: string) => Promise<void>;
   onRename: (id: number, name: string) => Promise<void>;
@@ -35,8 +36,10 @@ interface Props {
  *  "allocate swipes into…" on the deck and "add to collection" in the library.
  *  Also the home of collection management: rename and delete. */
 export const CollectionPicker: React.FC<Props> = ({
-  title, subtitle, collections, selected, confirmLabel, includeGeneral, sortable, onConfirm, onCreate, onRename, onDelete, onClose,
+  title, subtitle, collections, selected, confirmLabel, includeGeneral, sortable, manageMode, onConfirm, onCreate, onRename, onDelete, onClose,
 }) => {
+  const [confirmingBulk, setConfirmingBulk] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const [chosen, setChosen] = useState<number[]>(selected);
   const [sort, setSort] = useState<SortKey>('created');
   const sorted = useMemo(() => {
@@ -102,8 +105,8 @@ export const CollectionPicker: React.FC<Props> = ({
               }`}
             >
               <div>
-                <div className="text-sm text-zinc-900">General</div>
-                <div className="text-xs text-zinc-500">No collection — just into your selects</div>
+                <div className="text-sm text-zinc-900">No collection</div>
+                <div className="text-xs text-zinc-500">Right-swipes just go into your Selects</div>
               </div>
               <span
                 className={`w-5 h-5 rounded-full border flex items-center justify-center ${
@@ -209,6 +212,42 @@ export const CollectionPicker: React.FC<Props> = ({
             <Plus className="w-4 h-4" />
           </button>
         </div>
+
+        {/* bulk delete — manage mode only: dots select, this enacts */}
+        {manageMode && chosen.length > 0 && (
+          confirmingBulk ? (
+            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 mb-3">
+              <div className="text-sm text-zinc-900 mb-2">
+                Delete {chosen.length} collection{chosen.length === 1 ? '' : 's'}? The artworks themselves are kept.
+              </div>
+              <div className="flex gap-2">
+                <button
+                  disabled={bulkDeleting}
+                  onClick={async () => {
+                    setBulkDeleting(true);
+                    for (const id of chosen) await onDelete(id);
+                    setChosen([]);
+                    setBulkDeleting(false);
+                    setConfirmingBulk(false);
+                  }}
+                  className="px-3 py-1.5 rounded-full bg-rose-500 text-white text-xs font-semibold disabled:opacity-60"
+                >
+                  {bulkDeleting ? 'Deleting…' : 'Delete'}
+                </button>
+                <button onClick={() => setConfirmingBulk(false)} className="px-3 py-1.5 rounded-full bg-white border border-zinc-300 text-zinc-600 text-xs">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmingBulk(true)}
+              className="w-full bg-rose-500 text-white text-sm font-semibold rounded-full py-2.5 mb-3 hover:bg-rose-400"
+            >
+              Delete {chosen.length} collection{chosen.length === 1 ? '' : 's'}
+            </button>
+          )
+        )}
 
         <button
           onClick={() => onConfirm(chosen)}

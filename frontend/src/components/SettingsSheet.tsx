@@ -79,14 +79,7 @@ export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
       const saved = await api.saveSettings({
         advisory_name: settings.advisory_name,
         advisory_address: settings.advisory_address,
-        align: settings.align,
-        font: settings.font,
-        accent_hex: settings.accent_hex,
-        background_hex: settings.background_hex,
-        text_hex: settings.text_hex,
-        base_font_pt: settings.base_font_pt,
-        heading_font_pt: settings.heading_font_pt,
-        image_scale: settings.image_scale,
+        ...currentDials(settings),
         style_request: settings.style_request,
       });
       setSettings((s) => ({ ...saved, font_options: saved.font_options ?? s?.font_options }));
@@ -99,12 +92,13 @@ export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
   };
 
   const currentDials = (s: AdvisorSettings) => ({
-    align: s.align,
+    align_x: s.align_x,
     font: s.font,
     image_scale: s.image_scale,
     accent_hex: s.accent_hex,
     background_hex: s.background_hex,
     text_hex: s.text_hex,
+    price_hex: s.price_hex,
     base_font_pt: s.base_font_pt,
     heading_font_pt: s.heading_font_pt,
   });
@@ -157,8 +151,21 @@ export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
     setSettings((s) => (s ? { ...s, [key]: value } : s));
 
   const field = 'mt-1 w-full bg-white border border-zinc-300 rounded-lg px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:border-zinc-500';
-  const chip = (on: boolean) =>
-    `px-3.5 py-2 rounded-full text-sm border ${on ? 'bg-zinc-900 text-white border-zinc-900 font-medium' : 'border-zinc-300 text-zinc-600'}`;
+
+  // alignment slider: sticky ticks at left, thirds, center, right
+  const ALIGN_TICKS = [0, 1 / 3, 0.5, 2 / 3, 1];
+  const snapAlign = (v: number) => {
+    for (const t of ALIGN_TICKS) if (Math.abs(v - t) < 0.045) return Math.round(t * 1000) / 1000;
+    return v;
+  };
+  const alignLabel = (v: number) => {
+    if (v === 0) return 'Left';
+    if (v === 0.5) return 'Center';
+    if (v === 1) return 'Right';
+    if (Math.abs(v - 1 / 3) < 0.01) return '⅓';
+    if (Math.abs(v - 2 / 3) < 0.01) return '⅔';
+    return v < 0.5 ? 'Left of center' : 'Right of center';
+  };
   // fixed-height status slot + constant-size buttons: saving never shifts the layout
   const saveRow = (
     <>
@@ -300,10 +307,21 @@ export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
               </button>
             </div>
 
-            <div className="mb-3 flex gap-2 flex-wrap">
-              <button className={chip(settings.align === 'left')} onClick={() => set('align', 'left')}>Left aligned</button>
-              <button className={chip(settings.align === 'center')} onClick={() => set('align', 'center')}>Centered</button>
-            </div>
+            <label className="block mb-3">
+              <span className="flex justify-between text-xs text-zinc-500">
+                <span>Caption alignment</span><span>{alignLabel(settings.align_x)}</span>
+              </span>
+              <input type="range" min={0} max={1} step={0.01} value={settings.align_x}
+                     onChange={(e) => set('align_x', snapAlign(Number(e.target.value)))}
+                     className="w-full mt-1.5 accent-zinc-900" />
+              <div className="relative h-2 -mt-0.5 mx-[7px]">
+                {ALIGN_TICKS.map((t) => (
+                  <span key={t} className="absolute top-0 w-px h-1.5 bg-zinc-300"
+                        style={{ left: `${t * 100}%` }} />
+                ))}
+              </div>
+              <div className="flex justify-between text-[10px] text-zinc-400"><span>Left</span><span>Center</span><span>Right</span></div>
+            </label>
             <label className="block mb-3">
               <span className="text-xs text-zinc-500">Font</span>
               <select
@@ -341,17 +359,19 @@ export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
               <div className="flex justify-between text-[10px] text-zinc-400"><span>Intimate</span><span>Large</span></div>
             </label>
 
-            <div className="mb-4 grid grid-cols-3 gap-2">
+            <div className="mb-4 grid grid-cols-4 gap-2">
               {([
                 ['background_hex', 'Background'],
-                ['text_hex', 'Caption text'],
-                ['accent_hex', 'Artist & price'],
+                ['text_hex', 'Captions'],
+                ['accent_hex', 'Artist'],
+                ['price_hex', 'Price'],
               ] as const).map(([key, label]) => (
                 <label key={key} className="flex flex-col items-center gap-1 border border-zinc-200 rounded-xl py-2.5 cursor-pointer">
-                  <input type="color" value={settings[key] || '#ffffff'}
+                  <input type="color"
+                         value={(key === 'price_hex' ? settings.price_hex || settings.text_hex : settings[key]) || '#ffffff'}
                          onChange={(e) => set(key, e.target.value)}
-                         className="w-9 h-9 rounded-full border border-zinc-200 bg-transparent cursor-pointer" />
-                  <span className="text-[11px] text-zinc-500">{label}</span>
+                         className="w-8 h-8 rounded-full border border-zinc-200 bg-transparent cursor-pointer" />
+                  <span className="text-[10px] text-zinc-500">{label}</span>
                 </label>
               ))}
             </div>

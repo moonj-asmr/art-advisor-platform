@@ -55,11 +55,13 @@ export interface AdvisorSettings {
   advisory_address: string;
   logo_media: string;
   logo_url: string | null;
-  align: 'left' | 'center';
+  align: 'left' | 'center'; // legacy — align_x supersedes it
+  align_x: number; // caption position 0 (left) .. 0.5 (center) .. 1 (right)
   font: string; // a key from font_options
   accent_hex: string;
   background_hex: string;
   text_hex: string;
+  price_hex: string; // '' = follow the caption color
   base_font_pt: number;
   heading_font_pt: number;
   image_scale: number;

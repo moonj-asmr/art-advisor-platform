@@ -106,6 +106,25 @@ def test_settings_preview_images_for_in_app_viewer():
     assert all(p.startswith("data:image/png;base64,") for p in pages)
 
 
+def test_align_slider_and_price_color_round_trip():
+    r = client.put("/api/settings", json={"align_x": 1.0, "price_hex": "#aa0000"})
+    assert r.status_code == 200
+    got = client.get("/api/settings").json()
+    assert got["align_x"] == 1.0 and got["price_hex"] == "#aa0000"
+
+    # sliding right must actually move the caption block right
+    def max_word_x(ax: float) -> float:
+        client.put("/api/settings", json={"align_x": ax})
+        resp = client.get("/api/settings/preview")
+        doc = fitz.open(stream=resp.content, filetype="pdf")
+        x = max(w[2] for w in doc[1].get_text("words"))
+        doc.close()
+        return x
+
+    assert max_word_x(1.0) - max_word_x(0.0) > 60
+    client.put("/api/settings", json={"align_x": 0.0, "price_hex": ""})
+
+
 def test_preview_uses_unsaved_dials():
     import base64
 

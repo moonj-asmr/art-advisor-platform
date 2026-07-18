@@ -404,8 +404,9 @@ export const LibraryView: React.FC<Props> = ({
       {managing && (
         <CollectionPicker
           title="Collections"
-          subtitle="Rename with the pencil, delete with the trash — artworks are always kept."
+          subtitle="Rename with the pencil. Tick collections with the dot to delete several at once — artworks are always kept."
           sortable
+          manageMode
           collections={collections}
           selected={filter === 'all' ? [] : [filter]}
           confirmLabel="Done"
