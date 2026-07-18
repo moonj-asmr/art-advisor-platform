@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeftRight, CheckCircle2, FileDown, FolderCog, FolderPlus, Layers, Pencil, X } from 'lucide-react';
+import { ArrowLeftRight, CheckCircle2, FileDown, FolderCog, FolderPlus, Layers, Pencil } from 'lucide-react';
 import { api, mediaUrl } from '../lib/api';
 import type { Artwork, Collection } from '../types';
 import { CollectionPicker } from './CollectionPicker';
 import { ExportSheet } from './ExportSheet';
+import { Sheet } from './Sheet';
 
 type Segment = 'liked' | 'passed';
 
@@ -14,7 +15,6 @@ interface Props {
   onCreateCollection: (name: string) => Promise<void>;
   onRenameCollection: (id: number, name: string) => Promise<void>;
   onDeleteCollection: (id: number) => Promise<void>;
-  onNavVisible: (visible: boolean) => void;
 }
 
 const EDIT_FIELDS: Array<[keyof Artwork, string]> = [
@@ -29,7 +29,7 @@ const EDIT_FIELDS: Array<[keyof Artwork, string]> = [
 ];
 
 export const LibraryView: React.FC<Props> = ({
-  artworks, collections, onChanged, onCreateCollection, onRenameCollection, onDeleteCollection, onNavVisible,
+  artworks, collections, onChanged, onCreateCollection, onRenameCollection, onDeleteCollection,
 }) => {
   const [segment, setSegment] = useState<Segment>('liked');
   const [filter, setFilter] = useState<number | 'all'>('all');
@@ -44,29 +44,20 @@ export const LibraryView: React.FC<Props> = ({
   const lastY = useRef(0);
 
   const actionBarOpen = selectMode && checked.length > 0;
-  useEffect(() => {
-    // the multi-select action bar takes the nav's spot
-    onNavVisible(!actionBarOpen);
-  }, [actionBarOpen, onNavVisible]);
 
   useEffect(() => {
     // a deleted collection can't stay the active filter
     if (filter !== 'all' && !collections.some((c) => c.id === filter)) setFilter('all');
   }, [collections, filter]);
 
-  // top controls and the nav hide together on scroll-down, jog back on scroll-up
+  // top controls hide on scroll-down, jog back on scroll-up (the bottom nav stays put)
   const [controlsVisible, setControlsVisible] = useState(true);
   const onScroll = (e: React.UIEvent<HTMLDivElement>) => {
     if (actionBarOpen) return;
     const y = e.currentTarget.scrollTop;
-    let visible: boolean | null = null;
-    if (y < 24) visible = true;
-    else if (y - lastY.current > 6) visible = false;
-    else if (lastY.current - y > 6) visible = true;
-    if (visible !== null) {
-      onNavVisible(visible);
-      setControlsVisible(visible);
-    }
+    if (y < 24) setControlsVisible(true);
+    else if (y - lastY.current > 6) setControlsVisible(false);
+    else if (lastY.current - y > 6) setControlsVisible(true);
     lastY.current = y;
   };
 
@@ -134,15 +125,22 @@ export const LibraryView: React.FC<Props> = ({
               matching swipe-left / swipe-right */}
           <div className="flex bg-zinc-100 rounded-full p-0.5 text-sm">
             {([
-              ['passed', `Passed ${passedCount}`],
-              ['liked', `Selected ${likedCount}`],
-            ] as const).map(([key, label]) => (
+              ['passed', 'Passed', passedCount],
+              ['liked', 'Selected', likedCount],
+            ] as const).map(([key, label, count]) => (
               <button
                 key={key}
                 onClick={() => { setSegment(key); exitSelect(); }}
-                className={`px-4 py-2 rounded-full ${segment === key ? 'bg-white shadow text-zinc-900 font-medium' : 'text-zinc-500'}`}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-full ${segment === key ? 'bg-white shadow text-zinc-900 font-medium' : 'text-zinc-500'}`}
               >
                 {label}
+                {count > 0 && (
+                  <span className={`text-[10px] font-bold rounded-full min-w-[15px] h-[15px] px-1 flex items-center justify-center ${
+                    segment === key ? 'bg-zinc-900 text-white' : 'bg-zinc-200 text-zinc-700'
+                  }`}>
+                    {count}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -185,8 +183,8 @@ export const LibraryView: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* grid */}
-      <div className="flex-1 overflow-y-auto px-4 pb-32" onScroll={onScroll}>
+      {/* grid — extra bottom room only while the select lozenge floats over it */}
+      <div className={`flex-1 overflow-y-auto px-4 ${actionBarOpen ? 'pb-24' : 'pb-6'}`} onScroll={onScroll}>
         {shown.length === 0 ? (
           <div className="text-center text-sm text-zinc-400 pt-16 px-8">
             {segment === 'liked'
@@ -255,12 +253,10 @@ export const LibraryView: React.FC<Props> = ({
         )}
       </div>
 
-      {/* multi-select action bar — same size and place as the nav lozenge */}
+      {/* multi-select action lozenge — the one floating lozenge left, popping
+          up just above the permanent bottom nav */}
       {actionBarOpen && (
-        <div
-          className="absolute left-4 right-4 z-30 h-[52px] bg-white/95 backdrop-blur border border-zinc-200 shadow-[0_8px_24px_rgba(0,0,0,0.14)] rounded-full px-2 flex items-center justify-center gap-1 overflow-x-auto"
-          style={{ bottom: 'max(env(safe-area-inset-bottom), 0.9rem)' }}
-        >
+        <div className="absolute left-4 right-4 bottom-3 z-30 h-[52px] bg-white/95 backdrop-blur border border-zinc-200 shadow-[0_8px_24px_rgba(0,0,0,0.14)] rounded-full px-2 flex items-center justify-center gap-1 overflow-x-auto">
           <button
             onClick={() => setPicking(true)}
             className="flex items-center gap-1.5 bg-zinc-900 text-white text-xs font-semibold rounded-full px-2.5 py-2 whitespace-nowrap shrink-0"
@@ -292,32 +288,21 @@ export const LibraryView: React.FC<Props> = ({
 
       {/* edit modal */}
       {editing && (
-        <div className="fixed inset-0 z-40 bg-black/40 flex items-end sm:items-center justify-center" onClick={() => setEditing(null)}>
-          <div
-            className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-5 max-h-[85vh] overflow-y-auto border border-zinc-200 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-zinc-900">Edit caption</h3>
-              <button onClick={() => setEditing(null)} className="text-zinc-400 hover:text-zinc-900">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            {EDIT_FIELDS.map(([key, label]) => (
-              <label key={key} className="block mb-3">
-                <span className="text-xs text-zinc-500">{label}</span>
-                <input
-                  className="mt-1 w-full bg-white border border-zinc-300 rounded-lg px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:border-zinc-500"
-                  value={(form[key] as string) ?? ''}
-                  onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-                />
-              </label>
-            ))}
-            <button onClick={saveEdit} className="w-full bg-zinc-900 text-white font-semibold rounded-lg py-2.5 mt-2 hover:bg-zinc-700">
-              Save
-            </button>
-          </div>
-        </div>
+        <Sheet title="Edit caption" onClose={() => setEditing(null)}>
+          {EDIT_FIELDS.map(([key, label]) => (
+            <label key={key} className="block mb-3">
+              <span className="text-xs text-zinc-500">{label}</span>
+              <input
+                className="mt-1 w-full bg-white border border-zinc-300 rounded-lg px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:border-zinc-500"
+                value={(form[key] as string) ?? ''}
+                onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+              />
+            </label>
+          ))}
+          <button onClick={saveEdit} className="w-full bg-zinc-900 text-white font-semibold rounded-lg py-2.5 mt-2 hover:bg-zinc-700">
+            Save
+          </button>
+        </Sheet>
       )}
 
       {managing && (

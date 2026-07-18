@@ -172,6 +172,24 @@ def test_rename_and_delete_collection_keeps_artworks(uploaded):
     assert cid not in mine["collection_ids"]
 
 
+def test_export_description_only_when_asked(uploaded):
+    art = client.get("/api/artworks").json()[0]
+    client.patch(f"/api/artworks/{art['id']}",
+                 json={"description": "Born 1980, the artist explores memory and light."})
+
+    def export(show_description):
+        r = client.post("/api/export", json={"artwork_ids": [art["id"]],
+                                             "show_description": show_description})
+        assert r.status_code == 200
+        doc = fitz.open(stream=r.content, filetype="pdf")
+        text = "\n".join(page.get_text() for page in doc)
+        doc.close()
+        return text
+
+    assert "memory and light" not in export(False), "descriptions are off by default"
+    assert "memory and light" in export(True)
+
+
 def test_export_requires_ids():
     r = client.post("/api/export", json={"artwork_ids": []})
     assert r.status_code == 400

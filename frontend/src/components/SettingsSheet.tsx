@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Eye, Loader2, Sparkles, X } from 'lucide-react';
 import { api, mediaUrl } from '../lib/api';
 import type { AdvisorSettings } from '../types';
+import { Sheet } from './Sheet';
 
 interface Props {
   onClose: () => void;
@@ -14,6 +15,10 @@ export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
   const [settings, setSettings] = useState<AdvisorSettings | null>(null);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState('');
+  // preview shown in-app as page images — with a proper X to get out —
+  // because Safari's own PDF view has no obvious way back
+  const [previewPages, setPreviewPages] = useState<string[] | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   useEffect(() => {
     api.getSettings().then(setSettings).catch(() => setNotice('Could not load settings.'));
@@ -45,6 +50,19 @@ export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
     }
   };
 
+  const openPreview = async () => {
+    setPreviewLoading(true);
+    setNotice('');
+    try {
+      const res = await api.settingsPreviewImages();
+      setPreviewPages(res.pages);
+    } catch {
+      setNotice('Could not build the preview — try again.');
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
   const onLogo = async (file: File | undefined) => {
     if (!file) return;
     try {
@@ -62,21 +80,12 @@ export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
   const label = 'text-xs font-semibold text-zinc-900 uppercase tracking-wide';
 
   return (
-    <div className="fixed inset-0 z-40 bg-black/40 flex items-end sm:items-center justify-center" onClick={onClose}>
-      <div
-        className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-5 max-h-[92vh] overflow-y-auto border border-zinc-200 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
+    <>
+      <Sheet
+        title="Settings"
+        subtitle="Your advisory's identity and house style. Everything here prints automatically on exported PDFs."
+        onClose={onClose}
       >
-        <div className="flex items-center justify-between mb-1">
-          <h3 className="font-semibold text-zinc-900">Settings</h3>
-          <button aria-label="Close" onClick={onClose} className="text-zinc-400 hover:text-zinc-900">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-        <p className="text-xs text-zinc-500 mb-4">
-          Your advisory's identity and house style. Everything here prints automatically on exported PDFs.
-        </p>
-
         {!settings ? (
           <div className="py-10 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-zinc-400" /></div>
         ) : (
@@ -145,14 +154,41 @@ export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
                       className="flex-1 flex items-center justify-center gap-2 bg-zinc-900 text-white font-semibold rounded-full py-3 hover:bg-zinc-700 disabled:opacity-60">
                 {saving && <Loader2 className="w-4 h-4 animate-spin" />} Save
               </button>
-              <button onClick={() => window.open(api.settingsPreviewUrl(), '_blank')}
-                      className="flex items-center justify-center gap-2 px-4 bg-emerald-600 text-white font-semibold rounded-full py-3 hover:bg-emerald-500">
-                <Eye className="w-4 h-4" /> Preview PDF
+              <button onClick={openPreview} disabled={previewLoading}
+                      className="flex items-center justify-center gap-2 px-4 bg-emerald-600 text-white font-semibold rounded-full py-3 hover:bg-emerald-500 disabled:opacity-60">
+                {previewLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />} Preview PDF
               </button>
             </div>
           </>
         )}
-      </div>
-    </div>
+      </Sheet>
+
+      {/* full-screen preview with an unmissable X — no swiping back required */}
+      {previewPages && (
+        <div className="fixed inset-0 z-50 bg-zinc-900/95 flex flex-col">
+          <div
+            className="shrink-0 flex items-center justify-between px-4 pb-2"
+            style={{ paddingTop: 'calc(env(safe-area-inset-top) + 10px)' }}
+          >
+            <span className="text-white text-sm font-medium">Style preview</span>
+            <button
+              aria-label="Close preview"
+              onClick={() => setPreviewPages(null)}
+              className="p-2.5 rounded-full bg-white/15 text-white hover:bg-white/25"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div
+            className="flex-1 overflow-y-auto px-4 space-y-3"
+            style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 1.5rem)' }}
+          >
+            {previewPages.map((src, i) => (
+              <img key={i} src={src} alt={`Preview page ${i + 1}`} className="w-full rounded-lg shadow-lg" />
+            ))}
+          </div>
+        </div>
+      )}
+    </>
   );
 };

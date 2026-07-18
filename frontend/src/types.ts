@@ -43,6 +43,7 @@ export interface ExportOptions {
   client_name: string;
   show_price: boolean;
   show_gallery: boolean;
+  show_description: boolean;
   notes: Record<string, string>;
 }
 

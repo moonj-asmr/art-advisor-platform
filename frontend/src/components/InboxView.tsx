@@ -6,7 +6,6 @@ import type { UploadRecord } from '../types';
 interface Props {
   uploads: UploadRecord[];
   onUploaded: () => void;
-  onNavVisible: (visible: boolean) => void;
 }
 
 const formatDate = (iso: string | null) => {
@@ -75,22 +74,13 @@ const SwipeRow: React.FC<{ onDelete: () => void; children: React.ReactNode }> = 
   );
 };
 
-export const InboxView: React.FC<Props> = ({ uploads, onUploaded, onNavVisible }) => {
+export const InboxView: React.FC<Props> = ({ uploads, onUploaded }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [message, setMessage] = useState('');
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editGallery, setEditGallery] = useState('');
-  const lastY = useRef(0);
-
-  const onScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const y = e.currentTarget.scrollTop;
-    if (y < 24) onNavVisible(true);
-    else if (y - lastY.current > 6) onNavVisible(false);
-    else if (lastY.current - y > 6) onNavVisible(true);
-    lastY.current = y;
-  };
 
   const handleFiles = async (files: FileList | File[]) => {
     const pdfs = Array.from(files).filter((f) => f.name.toLowerCase().endsWith('.pdf'));
@@ -123,7 +113,7 @@ export const InboxView: React.FC<Props> = ({ uploads, onUploaded, onNavVisible }
   };
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 pb-28 pt-2" onScroll={onScroll}>
+    <div className="flex-1 overflow-y-auto px-4 pb-8 pt-2">
       {/* upload zone — compact */}
       <div
         className={`border-2 border-dashed rounded-2xl px-5 py-5 flex items-center gap-4 transition-colors ${

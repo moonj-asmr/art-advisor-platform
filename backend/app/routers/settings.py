@@ -163,9 +163,8 @@ def _placeholder_artworks() -> list[dict]:
     }]
 
 
-@router.get("/preview")
-def preview_pdf(db: Session = Depends(get_db)):
-    """Render a sample client PDF with the advisor's saved style."""
+def _build_preview_bytes(db: Session) -> bytes:
+    """A sample client PDF in the advisor's saved style."""
     row = get_settings_row(db)
     liked = (
         db.query(Artwork).filter(Artwork.status == "liked")
@@ -190,9 +189,31 @@ def preview_pdf(db: Session = Depends(get_db)):
         accent_hex=row.accent_hex or "#1a1a1a",
         logo_path=logo_path,
     )
-    pdf_bytes = build_pdf(artworks, MEDIA_DIR, style)
+    return build_pdf(artworks, MEDIA_DIR, style)
+
+
+@router.get("/preview")
+def preview_pdf(db: Session = Depends(get_db)):
     return Response(
-        content=pdf_bytes,
+        content=_build_preview_bytes(db),
         media_type="application/pdf",
         headers={"Content-Disposition": 'inline; filename="style-preview.pdf"'},
     )
+
+
+@router.get("/preview/images")
+def preview_images(db: Session = Depends(get_db)):
+    """The preview as page images — iPhone Safari can't scroll an embedded PDF,
+    so the app shows these in its own overlay with a proper close button."""
+    import base64
+
+    import fitz
+
+    doc = fitz.open(stream=_build_preview_bytes(db), filetype="pdf")
+    pages = [
+        "data:image/png;base64,"
+        + base64.b64encode(page.get_pixmap(dpi=120).tobytes("png")).decode()
+        for page in doc
+    ]
+    doc.close()
+    return {"pages": pages}
