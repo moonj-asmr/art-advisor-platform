@@ -34,6 +34,7 @@ export const LibraryView: React.FC<Props> = ({
 }) => {
   const [segment, setSegment] = useState<Segment>('liked');
   const [filter, setFilter] = useState<number | 'all'>('all');
+  const [galleryFilter, setGalleryFilter] = useState<string>('all');
   const [selectMode, setSelectMode] = useState(false);
   const [checked, setChecked] = useState<number[]>([]);
   const [editing, setEditing] = useState<Artwork | null>(null);
@@ -54,9 +55,16 @@ export const LibraryView: React.FC<Props> = ({
   const shown = useMemo(
     () =>
       artworks.filter(
-        (a) => a.status === segment && (filter === 'all' || a.collection_ids.includes(filter)),
+        (a) =>
+          a.status === segment &&
+          (filter === 'all' || a.collection_ids.includes(filter)) &&
+          (galleryFilter === 'all' || a.gallery === galleryFilter),
       ),
-    [artworks, segment, filter],
+    [artworks, segment, filter, galleryFilter],
+  );
+  const galleries = useMemo(
+    () => Array.from(new Set(artworks.map((a) => a.gallery).filter(Boolean))).sort(),
+    [artworks],
   );
   const likedCount = artworks.filter((a) => a.status === 'liked').length;
   const passedCount = artworks.filter((a) => a.status === 'passed').length;
@@ -160,7 +168,7 @@ export const LibraryView: React.FC<Props> = ({
           <select
             value={filter === 'all' ? '' : filter}
             onChange={(e) => setFilter(e.target.value ? Number(e.target.value) : 'all')}
-            className="bg-zinc-100 border border-zinc-200 text-zinc-600 text-sm rounded-full px-4 py-2 focus:outline-none max-w-[52%]"
+            className="flex-1 min-w-0 bg-zinc-100 border border-zinc-200 text-zinc-600 text-sm rounded-full px-3 py-2 focus:outline-none"
           >
             <option value="">All collections</option>
             {collections.map((c) => (
@@ -170,11 +178,20 @@ export const LibraryView: React.FC<Props> = ({
           <button
             title="Manage collections"
             onClick={() => setManaging(true)}
-            className="p-2.5 rounded-full bg-zinc-100 border border-zinc-200 text-zinc-500 hover:text-zinc-900"
+            className="p-2.5 rounded-full bg-zinc-100 border border-zinc-200 text-zinc-500 hover:text-zinc-900 shrink-0"
           >
             <FolderCog className="w-4 h-4" />
           </button>
-          <div className="flex-1" />
+          <select
+            value={galleryFilter === 'all' ? '' : galleryFilter}
+            onChange={(e) => setGalleryFilter(e.target.value || 'all')}
+            className="flex-1 min-w-0 bg-zinc-100 border border-zinc-200 text-zinc-600 text-sm rounded-full px-3 py-2 focus:outline-none"
+          >
+            <option value="">All galleries</option>
+            {galleries.map((g) => (
+              <option key={g} value={g}>{g}</option>
+            ))}
+          </select>
           <button
             onClick={() => (selectMode ? exitSelect() : setSelectMode(true))}
             className={`text-sm rounded-full px-4 py-2 border ${selectMode ? 'bg-zinc-900 text-white border-zinc-900' : 'border-zinc-300 text-zinc-600'}`}

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Eye, Loader2, Sparkles, X } from 'lucide-react';
+import { Building2, ChevronRight, Eye, Loader2, Palette, Sparkles, User, X } from 'lucide-react';
 import { api, mediaUrl } from '../lib/api';
 import type { AdvisorSettings } from '../types';
 import { Sheet } from './Sheet';
@@ -8,12 +8,21 @@ interface Props {
   onClose: () => void;
 }
 
-/** Everything about the advisor's account and house style. What is saved here
- *  prints on every exported client PDF — the export sheet only asks for
- *  per-client choices. */
 const USER_KEY = 'advisorydeck_user';
 
+type Section = 'menu' | 'account' | 'profile' | 'style';
+
+const SECTION_META: Record<Section, { title: string; subtitle?: string }> = {
+  menu: { title: 'Settings', subtitle: 'Everything here prints automatically on exported PDFs.' },
+  account: { title: 'Account' },
+  profile: { title: 'Advisory profile', subtitle: 'Printed on the cover of every client PDF.' },
+  style: { title: 'PDF style', subtitle: 'How your client PDFs are laid out.' },
+};
+
+/** Settings as a small sectioned menu — Account, Advisory profile, PDF style —
+ *  so each screen stays short and there's room to grow at full release. */
 export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
+  const [section, setSection] = useState<Section>('menu');
   const [settings, setSettings] = useState<AdvisorSettings | null>(null);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState('');
@@ -33,6 +42,11 @@ export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
       setLoginEmail((prev) => prev || s.email);
     }).catch(() => setNotice('Could not load settings.'));
   }, []);
+
+  const go = (s: Section) => {
+    setNotice('');
+    setSection(s);
+  };
 
   const doLogin = async () => {
     setLoggingIn(true);
@@ -56,9 +70,6 @@ export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
     setSignedInAs(null);
     setNotice('Logged out.');
   };
-
-  const set = <K extends keyof AdvisorSettings>(key: K, value: AdvisorSettings[K]) =>
-    setSettings((s) => (s ? { ...s, [key]: value } : s));
 
   const save = async () => {
     if (!settings) return;
@@ -106,25 +117,66 @@ export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
     }
   };
 
+  const set = <K extends keyof AdvisorSettings>(key: K, value: AdvisorSettings[K]) =>
+    setSettings((s) => (s ? { ...s, [key]: value } : s));
+
   const field = 'mt-1 w-full bg-white border border-zinc-300 rounded-lg px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:border-zinc-500';
   const chip = (on: boolean) =>
     `px-3.5 py-2 rounded-full text-sm border ${on ? 'bg-zinc-900 text-white border-zinc-900 font-medium' : 'border-zinc-300 text-zinc-600'}`;
-  const label = 'text-xs font-semibold text-zinc-900 uppercase tracking-wide';
+  const saveRow = (
+    <div className="flex justify-end gap-2 mt-1">
+      {section === 'style' && (
+        <button onClick={openPreview} disabled={previewLoading}
+                className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-full hover:bg-emerald-500 disabled:opacity-60">
+          {previewLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />} Preview PDF
+        </button>
+      )}
+      <button onClick={save} disabled={saving}
+              className="flex items-center gap-1.5 px-5 py-2 bg-zinc-900 text-white text-sm font-semibold rounded-full hover:bg-zinc-700 disabled:opacity-60">
+        {saving && <Loader2 className="w-4 h-4 animate-spin" />} Save
+      </button>
+    </div>
+  );
+
+  const menuRow = (icon: React.ReactNode, title: string, sub: string, target: Section) => (
+    <button
+      onClick={() => go(target)}
+      className="w-full flex items-center gap-3 rounded-xl border border-zinc-200 px-4 py-3.5 text-left hover:bg-zinc-50"
+    >
+      <span className="text-zinc-500">{icon}</span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-medium text-zinc-900">{title}</span>
+        <span className="block text-xs text-zinc-500 truncate">{sub}</span>
+      </span>
+      <ChevronRight className="w-4 h-4 text-zinc-400 shrink-0" />
+    </button>
+  );
+
+  const meta = SECTION_META[section];
 
   return (
     <>
       <Sheet
-        title="Settings"
-        subtitle="Your advisory's identity and house style. Everything here prints automatically on exported PDFs."
+        title={meta.title}
+        subtitle={meta.subtitle}
+        onBack={section !== 'menu' ? () => go('menu') : undefined}
         onClose={onClose}
       >
         {!settings ? (
           <div className="py-10 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-zinc-400" /></div>
-        ) : (
+        ) : section === 'menu' ? (
+          <div className="space-y-2">
+            {menuRow(<User className="w-5 h-5" />, 'Account',
+              signedInAs || 'Log in or create your login', 'account')}
+            {menuRow(<Building2 className="w-5 h-5" />, 'Advisory profile',
+              settings.advisory_name || 'Name, address, logo', 'profile')}
+            {menuRow(<Palette className="w-5 h-5" />, 'PDF style',
+              'Layout, AI styling, preview', 'style')}
+          </div>
+        ) : section === 'account' ? (
           <>
-            <div className={label}>Account</div>
             {signedInAs ? (
-              <div className="mt-2 mb-4 flex items-center gap-3">
+              <div className="flex items-center gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="text-sm text-zinc-900 truncate">{signedInAs}</div>
                   <div className="text-xs text-zinc-500">Logged in</div>
@@ -135,7 +187,7 @@ export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
                 </button>
               </div>
             ) : (
-              <div className="mt-2 mb-4">
+              <>
                 <label className="block mb-2">
                   <span className="text-xs text-zinc-500">Email</span>
                   <input className={field} type="email" autoComplete="email" placeholder="you@advisory.com"
@@ -156,11 +208,13 @@ export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
                     <span className="text-[11px] text-zinc-400">First time? This creates your login.</span>
                   )}
                 </div>
-              </div>
+              </>
             )}
-
-            <div className={label}>Organization</div>
-            <label className="block mt-2 mb-3">
+            {notice && <p className="text-xs text-emerald-700 mt-3">{notice}</p>}
+          </>
+        ) : section === 'profile' ? (
+          <>
+            <label className="block mb-3">
               <span className="text-xs text-zinc-500">Advisory name</span>
               <input className={field} placeholder="e.g. Britt Art Advisory"
                      value={settings.advisory_name} onChange={(e) => set('advisory_name', e.target.value)} />
@@ -170,9 +224,7 @@ export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
               <textarea className={field} rows={2} placeholder={'12 Rue de Seine\n75006 Paris'}
                         value={settings.advisory_address} onChange={(e) => set('advisory_address', e.target.value)} />
             </label>
-
-            <div className={label}>Logo</div>
-            <div className="mt-2 mb-4 flex items-center gap-3">
+            <div className="mb-4 flex items-center gap-3">
               {settings.logo_url ? (
                 <img src={mediaUrl(settings.logo_url)} alt="advisory logo"
                      className="h-10 max-w-[130px] object-contain border border-zinc-200 rounded bg-white p-1" />
@@ -180,13 +232,16 @@ export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
                 <span className="text-xs text-zinc-400">No logo yet</span>
               )}
               <label className="ml-auto shrink-0 px-3.5 py-2 bg-zinc-100 border border-zinc-200 rounded-full text-sm text-zinc-700 cursor-pointer">
-                {settings.logo_url ? 'Replace' : 'Upload'}
+                {settings.logo_url ? 'Replace logo' : 'Upload logo'}
                 <input type="file" accept="image/png,image/jpeg" hidden onChange={(e) => onLogo(e.target.files?.[0])} />
               </label>
             </div>
-
-            <div className={label}>Layout</div>
-            <div className="mt-2 mb-3 flex gap-2 flex-wrap">
+            {notice && <p className="text-xs text-emerald-700 mb-3">{notice}</p>}
+            {saveRow}
+          </>
+        ) : (
+          <>
+            <div className="mb-3 flex gap-2 flex-wrap">
               <button className={chip(settings.align === 'left')} onClick={() => set('align', 'left')}>Left aligned</button>
               <button className={chip(settings.align === 'center')} onClick={() => set('align', 'center')}>Centered</button>
               <button className={chip(settings.font === 'serif')} onClick={() => set('font', 'serif')}>Serif</button>
@@ -199,7 +254,6 @@ export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
                      className="w-full mt-2 accent-zinc-900" />
               <div className="flex justify-between text-[10px] text-zinc-400"><span>Intimate</span><span>Large</span></div>
             </label>
-
             <label className="block mb-4">
               <span className="flex items-center gap-1.5 text-xs text-zinc-500">
                 <Sparkles className="w-3.5 h-3.5" /> Describe your style in your own words — AI applies it
@@ -208,19 +262,8 @@ export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
                         placeholder="e.g. everything centered, larger images, headings in deep green"
                         value={settings.style_request} onChange={(e) => set('style_request', e.target.value)} />
             </label>
-
             {notice && <p className="text-xs text-emerald-700 mb-3">{notice}</p>}
-
-            <div className="flex justify-end gap-2">
-              <button onClick={openPreview} disabled={previewLoading}
-                      className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-full hover:bg-emerald-500 disabled:opacity-60">
-                {previewLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />} Preview PDF
-              </button>
-              <button onClick={save} disabled={saving}
-                      className="flex items-center gap-1.5 px-5 py-2 bg-zinc-900 text-white text-sm font-semibold rounded-full hover:bg-zinc-700 disabled:opacity-60">
-                {saving && <Loader2 className="w-4 h-4 animate-spin" />} Save
-              </button>
-            </div>
+            {saveRow}
           </>
         )}
       </Sheet>
