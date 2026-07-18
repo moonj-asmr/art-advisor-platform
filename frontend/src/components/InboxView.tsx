@@ -97,17 +97,20 @@ export const InboxView: React.FC<Props> = ({ uploads, onUploaded, onNavVisible }
     setMessage('');
     let found = 0;
     let failed = 0;
+    let aiUsed = false;
     for (const file of Array.from(files)) {
       if (!file.name.toLowerCase().endsWith('.pdf')) continue;
       try {
         const res = await api.uploadPdf(file, null, '');
         found += res.artworks_found;
+        if (res.engine === 'ai') aiUsed = true;
       } catch {
         failed += 1;
       }
     }
     setBusy(false);
-    setMessage(failed ? `Some uploads failed. ${found} artworks extracted.` : `${found} artworks extracted — they're in your deck.`);
+    const how = aiUsed ? 'read by AI' : 'extracted';
+    setMessage(failed ? `Some uploads failed. ${found} artworks ${how}.` : `${found} artworks ${how} — they're in your deck.`);
     onUploaded();
   };
 
@@ -141,7 +144,7 @@ export const InboxView: React.FC<Props> = ({ uploads, onUploaded, onNavVisible }
         {busy ? (
           <>
             <Loader2 className="w-6 h-6 text-zinc-500 animate-spin shrink-0" />
-            <p className="text-sm text-zinc-600">Reading the PDF, extracting artworks…</p>
+            <p className="text-sm text-zinc-600">Reading the PDF with AI — this can take a minute or two…</p>
           </>
         ) : (
           <>

@@ -111,8 +111,9 @@ def parse_caption(text: str) -> dict:
             return False
         if YEAR_RE.fullmatch(stripped):
             return False
-        # names don't carry digits or contact fragments
-        if re.search(r"\d", stripped) or CONTACT_RE.search(l):
+        # names don't carry digits, contact fragments, or business words —
+        # "American Art Catalogues" is a dealer, not an artist
+        if re.search(r"\d", stripped) or CONTACT_RE.search(l) or GALLERY_WORD.search(l):
             return False
         return all(w[:1].isupper() or w.isupper() or "-" in w for w in words if w.isalpha() or "-" in w)
 
@@ -320,10 +321,14 @@ def _is_contact_page(text: str) -> bool:
     return contact >= 2 and contact >= len(lines) * 0.3
 
 
-GALLERY_WORD = re.compile(r"\b(gallery|galerie|galleria|galería|fine art|projects?|kunsthalle)\b", re.I)
+GALLERY_WORD = re.compile(
+    r"\b(gallery|galerie|galleria|galería|fine arts?|arts?|projects?|kunsthalle|"
+    r"catalogues?|editions?|advisory|dealers?|auctioneers?|ltd|inc|llc)\b",
+    re.I,
+)
 
 
-def guess_gallery_name(pdf_path: str) -> str:
+def guess_gallery_name(pdf_path: str, fallback_name: str | None = None) -> str:
     """Best-effort gallery name.
 
     Galleries brand their PDFs by repeating their name in a header or footer
@@ -369,5 +374,6 @@ def guess_gallery_name(pdf_path: str) -> str:
             if count >= len(pages) * 0.8:
                 return line
 
-    base = os.path.splitext(os.path.basename(pdf_path))[0]
+    # last resort: the original filename — never the server's temp path
+    base = os.path.splitext(os.path.basename(fallback_name or pdf_path))[0]
     return _clean(re.sub(r"[_-]+", " ", base))[:60]

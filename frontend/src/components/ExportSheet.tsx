@@ -30,17 +30,45 @@ export const ExportSheet: React.FC<Props> = ({ artworks, onClose }) => {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [logoName, setLogoName] = useState('');
+  const [logoPreview, setLogoPreview] = useState('');
 
   const set = <K extends keyof ExportOptions>(k: K, v: ExportOptions[K]) => setOpts((o) => ({ ...o, [k]: v }));
 
+  // iPhones hand over HEIC photos; re-encode whatever was picked as PNG in the
+  // browser so the server always gets a format it can place in the PDF.
+  const toPng = async (file: File): Promise<File> => {
+    const url = URL.createObjectURL(file);
+    try {
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const i = new Image();
+        i.onload = () => resolve(i);
+        i.onerror = () => reject(new Error('unreadable image'));
+        i.src = url;
+      });
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      canvas.getContext('2d')!.drawImage(img, 0, 0);
+      const blob = await new Promise<Blob>((resolve, reject) =>
+        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('encode failed'))), 'image/png'),
+      );
+      return new File([blob], 'logo.png', { type: 'image/png' });
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  };
+
   const onLogo = async (file: File | undefined) => {
     if (!file) return;
+    setError('');
     try {
-      const { logo_media } = await api.uploadLogo(file);
+      const png = await toPng(file);
+      const { logo_media } = await api.uploadLogo(png);
       set('logo_media', logo_media);
       setLogoName(file.name);
+      setLogoPreview(URL.createObjectURL(png));
     } catch (e) {
-      setError('Logo upload failed');
+      setError('Could not read that image — try a PNG or JPEG file.');
     }
   };
 
@@ -134,8 +162,13 @@ export const ExportSheet: React.FC<Props> = ({ artworks, onClose }) => {
 
         <label className="block mb-5">
           <span className="text-xs text-zinc-500">Your logo (appears on cover & each page)</span>
-          <input type="file" accept="image/png,image/jpeg" onChange={(e) => onLogo(e.target.files?.[0])} className="mt-1 block w-full text-xs text-zinc-500 file:mr-3 file:rounded-full file:border-0 file:bg-zinc-100 file:px-3 file:py-1.5 file:text-zinc-700" />
-          {logoName && <span className="text-xs text-emerald-600">✓ {logoName}</span>}
+          <input type="file" accept="image/*" onChange={(e) => onLogo(e.target.files?.[0])} className="mt-1 block w-full text-xs text-zinc-500 file:mr-3 file:rounded-full file:border-0 file:bg-zinc-100 file:px-3 file:py-1.5 file:text-zinc-700" />
+          {logoPreview && (
+            <span className="mt-2 flex items-center gap-2">
+              <img src={logoPreview} alt="logo preview" className="h-8 max-w-[120px] object-contain border border-zinc-200 rounded bg-white p-0.5" />
+              <span className="text-xs text-emerald-600">✓ {logoName} — will print on the PDF</span>
+            </span>
+          )}
         </label>
 
         {error && <div className="text-xs text-rose-500 mb-3">{error}</div>}
@@ -143,7 +176,7 @@ export const ExportSheet: React.FC<Props> = ({ artworks, onClose }) => {
         <button
           onClick={doExport}
           disabled={busy}
-          className="w-full flex items-center justify-center gap-2 bg-zinc-900 text-white font-semibold rounded-full py-3 hover:bg-zinc-700 disabled:opacity-60"
+          className="w-full flex items-center justify-center gap-2 bg-emerald-600 text-white font-semibold rounded-full py-3 hover:bg-emerald-500 disabled:opacity-60"
         >
           {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
           {busy ? 'Building PDF…' : 'Download PDF'}
