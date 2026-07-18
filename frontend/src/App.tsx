@@ -148,11 +148,11 @@ function App() {
         )}
       </main>
 
-      {/* permanent bottom nav — hugs the very bottom of the screen; the iOS
-          home indicator overlaps its lower padding so the bar stays tight */}
+      {/* permanent bottom nav — sits at the very bottom of the screen, with
+          the iOS home indicator overlapping the tab pills themselves */}
       <nav
         className="shrink-0 z-30 bg-white rounded-t-2xl shadow-[0_-4px_16px_rgba(0,0,0,0.07)] flex items-center gap-1 px-3 pt-1"
-        style={{ paddingBottom: 'max(calc(env(safe-area-inset-bottom) - 16px), 0.25rem)' }}
+        style={{ paddingBottom: 'max(calc(env(safe-area-inset-bottom) - 26px), 0.2rem)' }}
       >
         {([
           ['deck', Layers, 'Deck', pending.length],
