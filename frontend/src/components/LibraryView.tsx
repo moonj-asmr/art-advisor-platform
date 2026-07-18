@@ -33,7 +33,8 @@ export const LibraryView: React.FC<Props> = ({
   artworks, collections, onChanged, onCreateCollection, onRenameCollection, onDeleteCollection,
 }) => {
   const [segment, setSegment] = useState<Segment>('liked');
-  const [filter, setFilter] = useState<number | 'all'>('all');
+  // 'all' = everything, 'none' = works not filed into any collection
+  const [filter, setFilter] = useState<number | 'all' | 'none'>('all');
   const [selectMode, setSelectMode] = useState(false);
   const [checked, setChecked] = useState<number[]>([]);
   const [editing, setEditing] = useState<Artwork | null>(null);
@@ -79,13 +80,16 @@ export const LibraryView: React.FC<Props> = ({
 
   useEffect(() => {
     // a deleted collection can't stay the active filter
-    if (filter !== 'all' && !collections.some((c) => c.id === filter)) setFilter('all');
+    if (typeof filter === 'number' && !collections.some((c) => c.id === filter)) setFilter('all');
   }, [collections, filter]);
 
   const shown = useMemo(
     () =>
       artworks.filter(
-        (a) => a.status === segment && (filter === 'all' || a.collection_ids.includes(filter)),
+        (a) =>
+          a.status === segment &&
+          (filter === 'all' ||
+            (filter === 'none' ? a.collection_ids.length === 0 : a.collection_ids.includes(filter))),
       ),
     [artworks, segment, filter],
   );
@@ -126,7 +130,7 @@ export const LibraryView: React.FC<Props> = ({
   // only offered while filtered to one collection — takes the checked works
   // out of that collection without touching the works themselves
   const bulkRemoveFromCollection = async () => {
-    if (filter === 'all') return;
+    if (typeof filter !== 'number') return;
     await api.bulkCollections(checked, filter, 'remove');
     exitSelect();
     onChanged();
@@ -199,16 +203,29 @@ export const LibraryView: React.FC<Props> = ({
               {filter === 'all' ? 'Export All' : 'Export'}
             </button>
           )}
+          {selectMode && shown.length > 0 && (
+            <button
+              onClick={() =>
+                setChecked(checked.length === shown.length ? [] : shown.map((a) => a.id))
+              }
+              className="text-[13px] rounded-full px-3.5 py-2 border border-zinc-200 text-zinc-600 whitespace-nowrap shrink-0"
+            >
+              {checked.length === shown.length ? 'Deselect all' : 'Select all'}
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {/* dropdown + cog together span exactly the slide's width */}
           <div className="flex items-center gap-1.5" style={segWidth ? { width: segWidth } : undefined}>
             <select
-              value={filter === 'all' ? '' : filter}
-              onChange={(e) => setFilter(e.target.value ? Number(e.target.value) : 'all')}
+              value={filter === 'all' ? '' : filter === 'none' ? 'none' : filter}
+              onChange={(e) =>
+                setFilter(e.target.value === '' ? 'all' : e.target.value === 'none' ? 'none' : Number(e.target.value))
+              }
               className="flex-1 min-w-0 bg-transparent border border-zinc-200 text-zinc-500 text-[13px] rounded-full px-3 py-2 focus:outline-none"
             >
               <option value="">All collections</option>
+              <option value="none">No collection</option>
               {dropdownCollections.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
@@ -318,13 +335,14 @@ export const LibraryView: React.FC<Props> = ({
         </div>
       )}
       {actionBarOpen && (
-        <div className="absolute left-4 right-4 bottom-3 z-30 h-[52px] bg-white/95 backdrop-blur border border-zinc-200 shadow-[0_8px_24px_rgba(0,0,0,0.14)] rounded-full px-2 flex items-center justify-center gap-1 overflow-x-auto">
+        <div className="absolute left-4 right-4 bottom-3 z-30 h-[52px] bg-white/95 backdrop-blur border border-zinc-200 shadow-[0_8px_24px_rgba(0,0,0,0.14)] rounded-full px-2.5 flex items-center justify-center gap-1.5 overflow-x-auto">
           {/* count first, so "0" makes it obvious you tap works next */}
           <span className={`text-xs font-bold rounded-full min-w-[24px] h-6 px-1.5 flex items-center justify-center shrink-0 ${
             nothingChecked ? 'bg-zinc-100 text-zinc-400' : 'bg-zinc-900 text-white'
           }`}>
             {checked.length}
           </span>
+          <span className="w-px self-stretch my-3 bg-zinc-200 shrink-0" />
           <button
             disabled={nothingChecked}
             onClick={() => setPicking(true)}
@@ -346,7 +364,7 @@ export const LibraryView: React.FC<Props> = ({
           >
             <Layers className="w-3.5 h-3.5" /> Re-deck
           </button>
-          {filter !== 'all' && (
+          {typeof filter === 'number' && (
             <button
               disabled={nothingChecked}
               title={`Remove from ${collectionName(filter)}`}
@@ -408,7 +426,7 @@ export const LibraryView: React.FC<Props> = ({
           sortable
           manageMode
           collections={collections}
-          selected={filter === 'all' ? [] : [filter]}
+          selected={[]}
           confirmLabel="Done"
           onConfirm={() => setManaging(false)}
           onCreate={onCreateCollection}
