@@ -20,6 +20,8 @@ function App() {
   const [pickingAllocation, setPickingAllocation] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  // "Review this PDF" from the Inbox deals only that upload's works
+  const [reviewUpload, setReviewUpload] = useState<{ id: number; filename: string } | null>(null);
 
   const reload = useCallback(async () => {
     try {
@@ -50,6 +52,12 @@ function App() {
   const pending = artworks.filter((a) => a.status === 'pending');
   const decided = artworks.filter((a) => a.status !== 'pending');
   const likedCount = artworks.filter((a) => a.status === 'liked').length;
+  const deckPending = reviewUpload ? pending.filter((a) => a.upload_id === reviewUpload.id) : pending;
+
+  // a deleted PDF can't stay the deck filter
+  useEffect(() => {
+    if (reviewUpload && loaded && !uploads.some((u) => u.id === reviewUpload.id)) setReviewUpload(null);
+  }, [uploads, reviewUpload, loaded]);
 
   // optimistic swipe updates so the deck never waits on the network
   const onDecided = (artwork: Artwork, decision: 'liked' | 'passed') =>
@@ -129,11 +137,13 @@ function App() {
           <div className="flex-1 flex items-center justify-center text-zinc-400 text-sm">Loading…</div>
         ) : tab === 'deck' ? (
           <DeckView
-            pending={pending}
+            pending={deckPending}
             likedCount={likedCount}
             allocation={allocation}
             onDecided={onDecided}
             onUndo={onUndo}
+            reviewingLabel={reviewUpload?.filename ?? null}
+            onClearReview={() => setReviewUpload(null)}
           />
         ) : tab === 'library' ? (
           <LibraryView
@@ -145,15 +155,22 @@ function App() {
             onDeleteCollection={deleteCollection}
           />
         ) : (
-          <InboxView uploads={uploads} onUploaded={reload} />
+          <InboxView
+            uploads={uploads}
+            onUploaded={reload}
+            onReview={(u) => {
+              setReviewUpload({ id: u.id, filename: u.filename });
+              setTab('deck');
+            }}
+          />
         )}
       </main>
 
       {/* permanent bottom nav — sits at the very bottom of the screen, with
           the iOS home indicator overlapping the tab pills themselves */}
       <nav
-        className="shrink-0 z-30 bg-white rounded-t-2xl shadow-[0_-4px_16px_rgba(0,0,0,0.07)] flex items-center gap-1 px-3 pt-1.5"
-        style={{ paddingBottom: 'max(calc(env(safe-area-inset-bottom) - 26px), 0.3rem)' }}
+        className="shrink-0 z-30 bg-white rounded-t-2xl shadow-[0_-4px_16px_rgba(0,0,0,0.07)] flex items-center gap-1 px-4 pt-2"
+        style={{ paddingBottom: 'max(calc(env(safe-area-inset-bottom) - 18px), 0.5rem)' }}
       >
         {([
           ['deck', Layers, 'Deck', pending.length],
@@ -163,7 +180,7 @@ function App() {
           <button
             key={key}
             onClick={() => setTab(key)}
-            className={`relative flex-1 h-11 flex items-center justify-center gap-1.5 text-[13px] rounded-full ${
+            className={`relative flex-1 h-12 flex items-center justify-center gap-1.5 text-[13px] rounded-full ${
               tab === key ? 'bg-zinc-900 text-white font-medium' : 'text-zinc-500'
             }`}
           >

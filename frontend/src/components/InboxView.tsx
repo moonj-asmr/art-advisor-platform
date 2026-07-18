@@ -1,11 +1,12 @@
 import React, { useRef, useState } from 'react';
-import { Check, FileText, Loader2, Pencil, Trash2, Upload } from 'lucide-react';
+import { Check, FileText, Layers, Loader2, Pencil, Trash2, Upload } from 'lucide-react';
 import { api } from '../lib/api';
 import type { UploadRecord } from '../types';
 
 interface Props {
   uploads: UploadRecord[];
   onUploaded: () => void;
+  onReview: (u: UploadRecord) => void; // deal just this PDF's works into the deck
 }
 
 const formatDate = (iso: string | null) => {
@@ -74,7 +75,7 @@ const SwipeRow: React.FC<{ onDelete: () => void; children: React.ReactNode }> = 
   );
 };
 
-export const InboxView: React.FC<Props> = ({ uploads, onUploaded }) => {
+export const InboxView: React.FC<Props> = ({ uploads, onUploaded, onReview }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -178,14 +179,26 @@ export const InboxView: React.FC<Props> = ({ uploads, onUploaded }) => {
                     )}
                   </div>
                   {editingId !== u.id && u.status === 'done' && (
-                    <button
-                      title="Edit gallery name"
-                      onPointerDown={(e) => e.stopPropagation()}
-                      onClick={() => startEdit(u)}
-                      className="p-1.5 rounded-md bg-zinc-100 text-zinc-500 hover:text-zinc-900 shrink-0"
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                    </button>
+                    <>
+                      {u.artwork_count > 0 && (
+                        <button
+                          title="Review this PDF in the deck"
+                          onPointerDown={(e) => e.stopPropagation()}
+                          onClick={() => onReview(u)}
+                          className="p-1.5 rounded-md bg-zinc-100 text-zinc-500 hover:text-zinc-900 shrink-0"
+                        >
+                          <Layers className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      <button
+                        title="Edit gallery name"
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={() => startEdit(u)}
+                        className="p-1.5 rounded-md bg-zinc-100 text-zinc-500 hover:text-zinc-900 shrink-0"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                    </>
                   )}
                 </div>
               </SwipeRow>

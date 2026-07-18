@@ -1,9 +1,10 @@
 import React from 'react';
-import { X } from 'lucide-react';
+import { ChevronLeft, X } from 'lucide-react';
 
 interface Props {
   title: string;
   subtitle?: string;
+  onBack?: () => void; // shown as a back chevron left of the title
   onClose: () => void;
   children: React.ReactNode;
 }
@@ -11,7 +12,7 @@ interface Props {
 /** The bottom sheet every modal uses. The overlay is padded past the iPhone
  *  status bar so the panel can never slide under the clock/battery, and the
  *  title row with its X stays pinned while the content scrolls. */
-export const Sheet: React.FC<Props> = ({ title, subtitle, onClose, children }) => (
+export const Sheet: React.FC<Props> = ({ title, subtitle, onBack, onClose, children }) => (
   <div
     className="fixed inset-0 z-40 bg-black/40 flex items-end sm:items-center justify-center"
     style={{ paddingTop: 'calc(env(safe-area-inset-top) + 16px)' }}
@@ -23,7 +24,14 @@ export const Sheet: React.FC<Props> = ({ title, subtitle, onClose, children }) =
     >
       <div className="shrink-0 px-5 pt-5">
         <div className="flex items-center justify-between mb-1">
-          <h3 className="font-semibold text-zinc-900">{title}</h3>
+          <div className="flex items-center gap-1.5 min-w-0">
+            {onBack && (
+              <button aria-label="Back" onClick={onBack} className="p-1 -ml-2 rounded-full text-zinc-500 hover:text-zinc-900">
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+            )}
+            <h3 className="font-semibold text-zinc-900 truncate">{title}</h3>
+          </div>
           <button aria-label="Close" onClick={onClose} className="p-1.5 -m-1.5 rounded-full text-zinc-400 hover:text-zinc-900">
             <X className="w-5 h-5" />
           </button>
