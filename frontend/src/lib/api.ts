@@ -114,8 +114,21 @@ export const api = {
     );
   },
 
-  settingsPreviewImages: () =>
-    fetch(`${BASE}/api/settings/preview/images`).then((r) => json<{ pages: string[] }>(r)),
+  // preview renders the dials exactly as shown on screen — no save needed
+  settingsPreviewImages: (dials: Partial<AdvisorSettings>) =>
+    fetch(`${BASE}/api/settings/preview/images`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dials),
+    }).then((r) => json<{ pages: string[] }>(r)),
+
+  // ask the AI to turn the advisor's words into dial values (nothing saved)
+  applyStyleRequest: (styleRequest: string, dials: Partial<AdvisorSettings>) =>
+    fetch(`${BASE}/api/settings/style-request`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ style_request: styleRequest, ...dials }),
+    }).then((r) => json<{ summary: string; dials: Partial<AdvisorSettings> }>(r)),
 
   exportPdf: async (artworkIds: number[], opts: ExportOptions): Promise<Blob> => {
     const res = await fetch(`${BASE}/api/export`, {

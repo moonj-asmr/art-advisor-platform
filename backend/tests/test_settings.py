@@ -104,3 +104,26 @@ def test_settings_preview_images_for_in_app_viewer():
     pages = r.json()["pages"]
     assert len(pages) >= 2  # cover + at least one artwork page
     assert all(p.startswith("data:image/png;base64,") for p in pages)
+
+
+def test_preview_uses_unsaved_dials():
+    import base64
+
+    # saved background stays white; the preview body carries a blue one
+    client.put("/api/settings", json={"background_hex": "#ffffff"})
+    r = client.post("/api/settings/preview/images", json={"background_hex": "#dde7f5"})
+    assert r.status_code == 200
+    png = base64.b64decode(r.json()["pages"][0].split(",", 1)[1])
+    doc = fitz.open(stream=png, filetype="png")
+    pix = doc[0].get_pixmap()
+    r_, g_, b_ = pix.pixel(2, 2)
+    assert b_ > r_ and b_ > 200, (r_, g_, b_)
+    doc.close()
+    assert client.get("/api/settings").json()["background_hex"] == "#ffffff", "nothing was saved"
+
+
+def test_style_request_needs_api_key(monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    r = client.post("/api/settings/style-request", json={"style_request": "green background"})
+    assert r.status_code == 503
+    assert "ANTHROPIC_API_KEY" in r.json()["detail"]

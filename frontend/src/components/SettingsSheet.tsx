@@ -98,16 +98,47 @@ export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
     }
   };
 
+  const currentDials = (s: AdvisorSettings) => ({
+    align: s.align,
+    font: s.font,
+    image_scale: s.image_scale,
+    accent_hex: s.accent_hex,
+    background_hex: s.background_hex,
+    text_hex: s.text_hex,
+    base_font_pt: s.base_font_pt,
+    heading_font_pt: s.heading_font_pt,
+  });
+
   const openPreview = async () => {
+    if (!settings) return;
     setPreviewLoading(true);
     setNotice('');
     try {
-      const res = await api.settingsPreviewImages();
+      const res = await api.settingsPreviewImages(currentDials(settings));
       setPreviewPages(res.pages);
     } catch {
       setNotice('Could not build the preview — try again.');
     } finally {
       setPreviewLoading(false);
+    }
+  };
+
+  const [applying, setApplying] = useState(false);
+  const applyStyle = async () => {
+    if (!settings || !settings.style_request.trim()) return;
+    setApplying(true);
+    setNotice('');
+    try {
+      const res = await api.applyStyleRequest(settings.style_request, currentDials(settings));
+      setSettings((s) => (s ? { ...s, ...res.dials } : s));
+      setNotice(`${res.summary} Preview it, then Save to keep it.`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : '';
+      setNotice(msg.includes('ANTHROPIC_API_KEY')
+        ? 'AI styling is unavailable — the API key is missing on the server.'
+        : 'The AI could not process that — try rewording it.');
+    } finally {
+      setApplying(false);
     }
   };
 
@@ -252,16 +283,22 @@ export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
           </>
         ) : (
           <>
-            {/* the AI prompt leads; the dials below show exactly what it set,
-                and every one can be adjusted by hand */}
-            <label className="block mb-4">
+            {/* the AI prompt leads; Apply visibly moves the dials below,
+                which stay hand-editable — nothing saves until Save */}
+            <label className="block mb-2">
               <span className="flex items-center gap-1.5 text-xs text-zinc-500">
-                <Sparkles className="w-3.5 h-3.5" /> Describe your style — AI sets the dials below
+                <Sparkles className="w-3.5 h-3.5" /> Describe your style — Apply sets the dials below
               </span>
               <textarea className={field} rows={2}
                         placeholder="e.g. light green background, all text 12pt, elegant serif"
                         value={settings.style_request} onChange={(e) => set('style_request', e.target.value)} />
             </label>
+            <div className="flex justify-end mb-4">
+              <button onClick={applyStyle} disabled={applying || !settings.style_request.trim()}
+                      className="w-28 flex items-center justify-center gap-1.5 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-full hover:bg-indigo-500 disabled:opacity-50">
+                {applying ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />} Apply
+              </button>
+            </div>
 
             <div className="mb-3 flex gap-2 flex-wrap">
               <button className={chip(settings.align === 'left')} onClick={() => set('align', 'left')}>Left aligned</button>
@@ -307,8 +344,8 @@ export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
             <div className="mb-4 grid grid-cols-3 gap-2">
               {([
                 ['background_hex', 'Background'],
-                ['text_hex', 'Text'],
-                ['accent_hex', 'Accent'],
+                ['text_hex', 'Caption text'],
+                ['accent_hex', 'Artist & price'],
               ] as const).map(([key, label]) => (
                 <label key={key} className="flex flex-col items-center gap-1 border border-zinc-200 rounded-xl py-2.5 cursor-pointer">
                   <input type="color" value={settings[key] || '#ffffff'}
