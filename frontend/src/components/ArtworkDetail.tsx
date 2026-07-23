@@ -1,7 +1,14 @@
-import React from 'react';
-import { ArrowLeftRight, Pencil, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { ArrowLeftRight, Pencil, Share, X } from 'lucide-react';
 import { mediaUrl } from '../lib/api';
 import type { Artwork, Collection } from '../types';
+
+/** The caption that travels with a shared work: title, artist, medium,
+ *  dimensions, price — nothing else. */
+const shareText = (a: Artwork) => {
+  const titleLine = [a.title, a.year].filter(Boolean).join(', ');
+  return [a.artist, titleLine, a.medium, a.dimensions, a.price].filter(Boolean).join('\n');
+};
 
 interface Props {
   artwork: Artwork;
@@ -17,6 +24,36 @@ export const ArtworkDetail: React.FC<Props> = ({ artwork: a, collections, onEdit
   const names = a.collection_ids
     .map((id) => collections.find((c) => c.id === id)?.name)
     .filter(Boolean) as string[];
+  const [sharing, setSharing] = useState(false);
+
+  // opens the system share sheet (Messages, WhatsApp, Mail…) with the main
+  // image and the short caption
+  const share = async () => {
+    setSharing(true);
+    try {
+      const text = shareText(a);
+      let files: File[] | undefined;
+      if (a.image_url) {
+        try {
+          const blob = await fetch(mediaUrl(a.image_url)).then((r) => r.blob());
+          const file = new File([blob], 'artwork.png', { type: blob.type || 'image/png' });
+          if (navigator.canShare?.({ files: [file] })) files = [file];
+        } catch {
+          /* image fetch failed — share the text alone */
+        }
+      }
+      if (navigator.share) {
+        await navigator.share(files ? { files, text } : { text });
+      } else {
+        await navigator.clipboard.writeText(text);
+        alert('Caption copied — sharing is only available on the phone.');
+      }
+    } catch {
+      /* user cancelled the share sheet */
+    } finally {
+      setSharing(false);
+    }
+  };
 
   return (
     // tapping anywhere closes — the action buttons stop the tap from bubbling
@@ -70,7 +107,11 @@ export const ArtworkDetail: React.FC<Props> = ({ artwork: a, collections, onEdit
           ))}
         </div>
 
-        <div className="mt-5 flex gap-2">
+        <div className="mt-5 flex gap-2 flex-wrap">
+          <button onClick={(e) => { e.stopPropagation(); share(); }} disabled={sharing}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-zinc-900 text-white rounded-full text-sm font-semibold disabled:opacity-60">
+            <Share className="w-4 h-4" /> {sharing ? 'Sharing…' : 'Share'}
+          </button>
           <button onClick={(e) => { e.stopPropagation(); onEdit(); }} className="flex items-center gap-1.5 px-4 py-2 bg-zinc-100 border border-zinc-200 rounded-full text-sm text-zinc-700 hover:text-zinc-900">
             <Pencil className="w-4 h-4" /> Edit caption
           </button>

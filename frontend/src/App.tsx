@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Heart, Inbox, Layers, Plus, Settings, X } from 'lucide-react';
+import { BookOpen, Inbox, Layers, Plus, Settings, X } from 'lucide-react';
 import { api } from './lib/api';
 import type { Artwork, Collection, UploadRecord } from './types';
 import { CollectionPicker } from './components/CollectionPicker';
@@ -199,7 +199,7 @@ function App() {
       >
         {([
           ['deck', Layers, 'Deck', pending.length],
-          ['library', Heart, 'Library', likedCount],
+          ['library', BookOpen, 'Catalogue', likedCount],
           ['inbox', Inbox, 'Inbox', 0],
         ] as const).map(([key, Icon, label, badge]) => (
           <button
@@ -227,7 +227,7 @@ function App() {
       {pickingAllocation && (
         <CollectionPicker
           title="Collection"
-          subtitle="Right-swipes always go into your Selects — tick collections to also file them there. You can re-file later in the Library."
+          subtitle="Right-swipes always go into your Selects — tick collections to also file them there. You can re-file later in the Catalogue."
           collections={collections}
           selected={allocation}
           includeGeneral

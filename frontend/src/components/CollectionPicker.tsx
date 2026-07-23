@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Check, Pencil, Plus } from 'lucide-react';
 import type { Collection } from '../types';
 import { Sheet } from './Sheet';
+import { SwipeRow } from './SwipeRow';
 
 type SortKey = 'created' | 'name' | 'recent';
 
@@ -115,10 +116,9 @@ export const CollectionPicker: React.FC<Props> = ({
           )}
           {sorted.map((c) => {
             const on = chosen.includes(c.id);
-            return (
+            const row = (
               <div
-                key={c.id}
-                className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 ${
+                className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 bg-white ${
                   on ? 'border-zinc-900 bg-zinc-50' : 'border-zinc-200'
                 }`}
               >
@@ -163,6 +163,21 @@ export const CollectionPicker: React.FC<Props> = ({
                   </>
                 )}
               </div>
+            );
+            // in the manage sheet a row can also be swiped left to delete it,
+            // like the PDF rows in the Inbox
+            return manageMode ? (
+              <SwipeRow
+                key={c.id}
+                onDelete={async () => {
+                  await onDelete(c.id);
+                  setChosen((ids) => ids.filter((x) => x !== c.id));
+                }}
+              >
+                {row}
+              </SwipeRow>
+            ) : (
+              <React.Fragment key={c.id}>{row}</React.Fragment>
             );
           })}
         </div>
