@@ -1,7 +1,8 @@
 import React, { useRef, useState } from 'react';
-import { Check, FileText, Layers, Loader2, Pencil, Trash2, Upload } from 'lucide-react';
+import { Check, FileText, Layers, Loader2, Pencil, Upload } from 'lucide-react';
 import { api } from '../lib/api';
 import type { UploadRecord } from '../types';
+import { SwipeRow } from './SwipeRow';
 
 interface Props {
   uploads: UploadRecord[];
@@ -29,66 +30,6 @@ const formatDate = (iso: string | null) => {
   return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
 };
 
-/** iOS-style swipe-left-to-delete row. */
-const SwipeRow: React.FC<{ onDelete: () => void; children: React.ReactNode }> = ({ onDelete, children }) => {
-  const [dx, setDx] = useState(0);
-  const [open, setOpen] = useState(false);
-  const start = useRef<number | null>(null);
-  const dragging = useRef(false);
-
-  const onPointerDown = (e: React.PointerEvent) => {
-    (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
-    start.current = e.clientX;
-    dragging.current = false;
-  };
-  const onPointerMove = (e: React.PointerEvent) => {
-    if (start.current == null) return;
-    const delta = e.clientX - start.current + (open ? -80 : 0);
-    if (Math.abs(delta) > 6) dragging.current = true;
-    setDx(Math.max(-96, Math.min(0, delta)));
-  };
-  const onPointerUp = () => {
-    if (start.current == null) return;
-    start.current = null;
-    if (dx < -48) {
-      setOpen(true);
-      setDx(-80);
-    } else {
-      setOpen(false);
-      setDx(0);
-    }
-  };
-  const closeIfOpen = () => {
-    if (open && !dragging.current) {
-      setOpen(false);
-      setDx(0);
-    }
-  };
-
-  return (
-    <div className="relative overflow-hidden rounded-xl">
-      <button
-        onClick={onDelete}
-        className="absolute inset-y-0 right-0 w-20 bg-rose-500 text-white flex flex-col items-center justify-center gap-0.5 text-[11px] font-semibold"
-      >
-        <Trash2 className="w-4 h-4" />
-        Delete
-      </button>
-      <div
-        className="relative bg-white touch-pan-y"
-        style={{ transform: `translateX(${dx}px)`, transition: start.current == null ? 'transform .2s ease' : 'none' }}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
-        onClick={closeIfOpen}
-      >
-        {children}
-      </div>
-    </div>
-  );
-};
-
 type UploadSort = 'date' | 'gallery' | 'status';
 
 export const InboxView: React.FC<Props> = ({ uploads, reviewStats, onUploaded, onReview }) => {
@@ -113,6 +54,7 @@ export const InboxView: React.FC<Props> = ({ uploads, reviewStats, onUploaded, o
   const [dragOver, setDragOver] = useState(false);
   const [message, setMessage] = useState('');
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [editName, setEditName] = useState('');
   const [editGallery, setEditGallery] = useState('');
 
   const handleFiles = async (files: FileList | File[]) => {
@@ -136,11 +78,12 @@ export const InboxView: React.FC<Props> = ({ uploads, reviewStats, onUploaded, o
 
   const startEdit = (u: UploadRecord) => {
     setEditingId(u.id);
+    setEditName(u.filename);
     setEditGallery(u.gallery);
   };
   const saveEdit = async () => {
     if (editingId == null) return;
-    await api.updateUploadGallery(editingId, editGallery);
+    await api.updateUpload(editingId, { filename: editName, gallery: editGallery });
     setEditingId(null);
     onUploaded();
   };
@@ -201,23 +144,37 @@ export const InboxView: React.FC<Props> = ({ uploads, reviewStats, onUploaded, o
                     <FileText className="w-5 h-5 text-zinc-400 shrink-0" />
                   )}
                   <div className="min-w-0 flex-1">
-                    <div className="text-sm text-zinc-900 truncate">{u.filename}</div>
+                    {editingId !== u.id && <div className="text-sm text-zinc-900 truncate">{u.filename}</div>}
                     {u.status === 'processing' ? (
                       <div className="text-xs text-blue-600 truncate">AI is reading this PDF… you can keep working</div>
                     ) : u.status === 'failed' ? (
                       <div className="text-xs text-rose-500 truncate">Processing failed — swipe left to delete and retry</div>
                     ) : editingId === u.id ? (
-                      <div className="flex items-center gap-1.5 mt-1" onPointerDown={(e) => e.stopPropagation()}>
-                        <input
-                          value={editGallery}
-                          onChange={(e) => setEditGallery(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && saveEdit()}
-                          autoFocus
-                          className="flex-1 min-w-0 bg-white border border-zinc-300 rounded-md px-2 py-1 text-xs text-zinc-900 focus:outline-none focus:border-zinc-500"
-                        />
-                        <button onClick={saveEdit} className="p-1.5 rounded-md bg-zinc-900 text-white">
-                          <Check className="w-3.5 h-3.5" />
-                        </button>
+                      <div className="space-y-1.5 py-0.5" onPointerDown={(e) => e.stopPropagation()}>
+                        <label className="block">
+                          <span className="text-[10px] text-zinc-400">PDF name</span>
+                          <input
+                            value={editName}
+                            onChange={(e) => setEditName(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && saveEdit()}
+                            autoFocus
+                            className="w-full bg-white border border-zinc-300 rounded-md px-2 py-1 text-xs text-zinc-900 focus:outline-none focus:border-zinc-500"
+                          />
+                        </label>
+                        <div className="flex items-end gap-1.5">
+                          <label className="flex-1 min-w-0">
+                            <span className="text-[10px] text-zinc-400">Gallery</span>
+                            <input
+                              value={editGallery}
+                              onChange={(e) => setEditGallery(e.target.value)}
+                              onKeyDown={(e) => e.key === 'Enter' && saveEdit()}
+                              className="w-full bg-white border border-zinc-300 rounded-md px-2 py-1 text-xs text-zinc-900 focus:outline-none focus:border-zinc-500"
+                            />
+                          </label>
+                          <button onClick={saveEdit} className="p-1.5 rounded-md bg-zinc-900 text-white shrink-0">
+                            <Check className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     ) : (
                       <>
@@ -243,7 +200,7 @@ export const InboxView: React.FC<Props> = ({ uploads, reviewStats, onUploaded, o
                         </button>
                       )}
                       <button
-                        title="Edit gallery name"
+                        title="Edit PDF name and gallery"
                         onPointerDown={(e) => e.stopPropagation()}
                         onClick={() => startEdit(u)}
                         className="p-1.5 rounded-md bg-zinc-100 text-zinc-500 hover:text-zinc-900 shrink-0"
@@ -260,8 +217,8 @@ export const InboxView: React.FC<Props> = ({ uploads, reviewStats, onUploaded, o
         )}
         {uploads.length > 0 && (
           <p className="text-[11px] text-zinc-400 mt-3">
-            Swipe a PDF left to delete it — this removes its artworks from the deck and library too.
-            The pencil corrects the gallery name across all of its works.
+            Swipe a PDF left to delete it — this removes its artworks from the deck and catalogue too.
+            The pencil edits the PDF's name and its gallery (which flows to all of its works).
           </p>
         )}
       </div>

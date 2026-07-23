@@ -200,7 +200,7 @@ export const LibraryView: React.FC<Props> = ({
               className="flex items-center gap-1.5 bg-emerald-600 text-white text-sm font-semibold rounded-full px-4 py-2 whitespace-nowrap shrink-0 hover:bg-emerald-500"
             >
               <FileDown className="w-4 h-4" />
-              {filter === 'all' ? 'Export All' : 'Export'}
+              Export
             </button>
           )}
           {selectMode && shown.length > 0 && (
@@ -297,10 +297,8 @@ export const LibraryView: React.FC<Props> = ({
                       {a.year ? `, ${a.year}` : ''}
                     </div>
                     <div className="text-xs text-zinc-700 font-medium mt-0.5">{a.price}</div>
-                    {a.collection_ids.length > 0 && (
-                      <div className="text-[10px] text-zinc-400 truncate mt-0.5">
-                        {a.collection_ids.map(collectionName).filter(Boolean).join(' · ')}
-                      </div>
+                    {a.gallery && (
+                      <div className="text-[10px] text-zinc-400 truncate mt-0.5">{a.gallery}</div>
                     )}
                     {!selectMode && (
                       <div className="flex items-center gap-1 mt-2">

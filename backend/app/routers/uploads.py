@@ -142,21 +142,26 @@ def list_uploads(db: Session = Depends(get_db)):
 
 
 class UploadPatch(BaseModel):
-    gallery: str
+    gallery: str | None = None
+    filename: str | None = None
 
 
 @router.patch("/{upload_id}")
 def update_upload(upload_id: int, body: UploadPatch, db: Session = Depends(get_db)):
-    """Rename the gallery on a processed PDF — flows through to its artworks."""
+    """Rename the PDF's display name and/or its gallery — the gallery flows
+    through to its artworks."""
     upload = db.get(Upload, upload_id)
     if not upload:
         raise HTTPException(404, "Upload not found")
-    gallery = body.gallery.strip()
-    upload.gallery = gallery
-    for art in upload.artworks:
-        art.gallery = gallery
+    if body.filename is not None and body.filename.strip():
+        upload.filename = body.filename.strip()
+    if body.gallery is not None:
+        gallery = body.gallery.strip()
+        upload.gallery = gallery
+        for art in upload.artworks:
+            art.gallery = gallery
     db.commit()
-    return {"id": upload.id, "gallery": upload.gallery, "artworks_updated": len(upload.artworks)}
+    return {"id": upload.id, "filename": upload.filename, "gallery": upload.gallery}
 
 
 @router.delete("/{upload_id}")

@@ -70,11 +70,11 @@ export const api = {
 
   uploads: () => fetch(`${BASE}/api/uploads`).then((r) => json<UploadRecord[]>(r)),
 
-  updateUploadGallery: (id: number, gallery: string) =>
+  updateUpload: (id: number, patch: { gallery?: string; filename?: string }) =>
     fetch(`${BASE}/api/uploads/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ gallery }),
+      body: JSON.stringify(patch),
     }).then((r) => json(r)),
 
   deleteUpload: (id: number) =>

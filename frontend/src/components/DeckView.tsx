@@ -65,7 +65,7 @@ export const DeckView: React.FC<Props> = ({
           {reviewingLabel
             ? 'You have been through every work in this PDF — tap the pill above to go back to the full deck.'
             : likedCount > 0
-              ? `You have ${likedCount} work${likedCount === 1 ? '' : 's'} in your Library — refine them and export a client PDF.`
+              ? `You have ${likedCount} work${likedCount === 1 ? '' : 's'} in your Catalogue — refine them and export a client PDF.`
               : 'Upload a gallery PDF in the Inbox tab and the works will appear here to review.'}
         </p>
         {history.length > 0 && (
