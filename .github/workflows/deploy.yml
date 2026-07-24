@@ -127,30 +127,64 @@ jobs:
           KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
         run: |
           sudo gem install jwt --no-document -q
-          TOKEN=$(ruby -r jwt -r openssl -r base64 -e '
-            raw = ENV["KEY_CONTENT"].strip.gsub("\\n", "\n")
-            if raw.include?("BEGIN") && !raw.include?("\n")
-              b64 = raw[/BEGIN PRIVATE KEY-{5}(.*?)-{5}END/m, 1].to_s.gsub(/\s+/, "")
-              raw = "-----BEGIN PRIVATE KEY-----\n" + b64.scan(/.{1,64}/).join("\n") + "\n-----END PRIVATE KEY-----\n"
+          # Prints only lengths/format checks and HTTP codes — never secret values.
+          # Tries both Apple auth styles: Team key (uses Issuer ID) and
+          # Individual key (no Issuer ID), so a wrong key *type* is diagnosed
+          # instead of showing up as a bare 401.
+          ruby -r jwt -r openssl -r base64 -r json -r net/http <<'RUBY'
+          kid = ENV["KEY_ID"].to_s.strip
+          iss = ENV["ISSUER_ID"].to_s.strip
+          puts "KEY_ID: #{kid.length} chars (expect 10), format #{kid.match?(/\A[A-Z0-9]{10}\z/) ? "OK" : "WRONG - must be exactly the 10 letters/digits from the AuthKey_XXXXXXXXXX.p8 filename"}"
+          puts "ISSUER_ID: #{iss.length} chars (expect 36), format #{iss.match?(/\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/) ? "OK" : "WRONG - must be the dashed UUID from the top of Users and Access > Integrations"}"
+          raw = ENV["KEY_CONTENT"].strip.gsub("\\n", "\n")
+          if raw.include?("BEGIN") && !raw.include?("\n")
+            b64 = raw[/BEGIN PRIVATE KEY-{5}(.*?)-{5}END/m, 1].to_s.gsub(/\s+/, "")
+            raw = "-----BEGIN PRIVATE KEY-----\n" + b64.scan(/.{1,64}/).join("\n") + "\n-----END PRIVATE KEY-----\n"
+          end
+          key = begin
+            OpenSSL::PKey.read(raw)
+          rescue OpenSSL::PKey::PKeyError
+            OpenSSL::PKey.read(Base64.decode64(raw))
+          end
+          puts ".p8 private key parsed OK"
+          now = Time.now.to_i
+          base = { iat: now, exp: now + 600, aud: "appstoreconnect-v1" }
+          attempts = {
+            "Team key auth" => JWT.encode(base.merge(iss: iss), key, "ES256", { kid: kid }),
+            "Individual key auth" => JWT.encode(base.merge(sub: "user"), key, "ES256", { kid: kid }),
+          }
+          uri = URI("https://api.appstoreconnect.apple.com/v1/apps?fields%5Bapps%5D=bundleId,name")
+          winner = nil
+          attempts.each do |label, token|
+            res = Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
+              req = Net::HTTP::Get.new(uri)
+              req["Authorization"] = "Bearer #{token}"
+              http.request(req)
             end
-            key = begin
-              OpenSSL::PKey.read(raw)
-            rescue OpenSSL::PKey::PKeyError
-              OpenSSL::PKey.read(Base64.decode64(raw))
-            end
-            now = Time.now.to_i
-            puts JWT.encode({iss: ENV["ISSUER_ID"], iat: now, exp: now + 600, aud: "appstoreconnect-v1"}, key, "ES256", {kid: ENV["KEY_ID"]})
-          ')
-          RESP=$(curl -s -w "\n%{http_code}" -H "Authorization: Bearer $TOKEN" \
-            "https://api.appstoreconnect.apple.com/v1/apps?fields%5Bapps%5D=bundleId,name")
-          CODE=$(echo "$RESP" | tail -1)
-          BODY=$(echo "$RESP" | sed '$d')
-          echo "HTTP $CODE"
-          [ "$CODE" = "200" ] || { echo "API key failed"; echo "$BODY" | head -5; exit 1; }
-          echo "API key OK. Apps in the account:"
-          echo "$BODY" | ruby -r json -e 'JSON.parse(STDIN.read)["data"].each { |a| puts "  #{a["attributes"]["name"]} - #{a["attributes"]["bundleId"]}" }'
-          if echo "$BODY" | grep -q "com.advisorydeck.app"; then
-            echo "app record com.advisorydeck.app EXISTS"
+            puts "#{label}: HTTP #{res.code}"
+            (winner = [label, res.body]) and break if res.code == "200"
+          end
+          unless winner
+            abort <<~MSG
+              Apple rejected both auth styles. The .p8 parsed fine, so one of these is true:
+                - APP_STORE_CONNECT_API_KEY_ID does not belong to this .p8 file
+                  (the downloaded filename AuthKey_XXXXXXXXXX.p8 shows the matching ID)
+                - APP_STORE_CONNECT_API_ISSUER_ID is wrong (Issuer ID at the top of
+                  App Store Connect > Users and Access > Integrations)
+                - the key was revoked, or was created only minutes ago (Apple can
+                  take a few minutes to activate a brand-new key - retry shortly)
+            MSG
+          end
+          label, body = winner
+          puts "API key OK (#{label}). Apps in the account:"
+          apps = JSON.parse(body)["data"]
+          apps.each { |a| puts "  #{a["attributes"]["name"]} - #{a["attributes"]["bundleId"]}" }
+          if apps.any? { |a| a["attributes"]["bundleId"] == "com.advisorydeck.app" }
+            puts "app record com.advisorydeck.app EXISTS"
           else
-            echo "WARNING: no app record with bundle ID com.advisorydeck.app yet - create it in App Store Connect before the first TestFlight upload"
-          fi
+            puts "WARNING: no app record with bundle ID com.advisorydeck.app yet - create it in App Store Connect before the first TestFlight upload"
+          end
+          if label.include?("Individual")
+            puts "NOTE: this is an Individual API key; the signing pipeline is set up for a Team key. Create a Team key instead, or ask Claude to switch the pipeline to individual-key auth."
+          end
+          RUBY
