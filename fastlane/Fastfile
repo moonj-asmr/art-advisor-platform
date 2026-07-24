@@ -1,0 +1,80 @@
+# AdvisoryDeck iOS lanes.
+#
+#   beta        — bump build number, build signed release, upload to TestFlight
+#                 (runs on every push to main via GitHub Actions)
+#   build_check — compile only, no signing (runs on pull requests)
+#
+# Authentication is an App Store Connect API key from CI secrets — never an
+# Apple ID password. Signing certificates come from the encrypted match repo.
+
+default_platform(:ios)
+
+XCODEPROJ = "frontend/ios/App/App.xcodeproj"
+SCHEME = "App"
+
+def asc_api_key
+  app_store_connect_api_key(
+    key_id: ENV.fetch("APP_STORE_CONNECT_API_KEY_ID"),
+    issuer_id: ENV.fetch("APP_STORE_CONNECT_API_ISSUER_ID"),
+    key_content: ENV.fetch("APP_STORE_CONNECT_API_KEY_CONTENT"),
+  )
+end
+
+platform :ios do
+  desc "Compile check for pull requests — no signing, no upload"
+  lane :build_check do
+    build_app(
+      project: XCODEPROJ,
+      scheme: SCHEME,
+      skip_codesigning: true,
+      skip_archive: true,
+      skip_package_ipa: true,
+      destination: "generic/platform=iOS",
+      xcargs: "CODE_SIGNING_ALLOWED=NO",
+    )
+  end
+
+  desc "Build, sign, and upload to TestFlight"
+  lane :beta do
+    api_key = asc_api_key
+
+    # decrypt (or on the very first run, create) the signing certificate and
+    # provisioning profile from the private certificates repo
+    match(
+      type: "appstore",
+      api_key: api_key,
+      git_basic_authorization: Base64.strict_encode64("x-access-token:#{ENV.fetch('MATCH_REPO_PAT')}"),
+      readonly: false,
+    )
+
+    # the Capacitor template defaults to automatic signing — pin it to the
+    # match-managed distribution certificate and profile instead
+    update_code_signing_settings(
+      path: XCODEPROJ,
+      use_automatic_signing: false,
+      team_id: ENV.fetch("APPLE_TEAM_ID"),
+      bundle_identifier: "com.advisorydeck.app",
+      code_sign_identity: "Apple Distribution",
+      profile_name: "match AppStore com.advisorydeck.app",
+    )
+
+    # build numbers continue from whatever TestFlight has seen last
+    build_number = latest_testflight_build_number(
+      api_key: api_key,
+      app_identifier: "com.advisorydeck.app",
+      initial_build_number: 0,
+    ) + 1
+    increment_build_number(build_number: build_number, xcodeproj: XCODEPROJ)
+
+    build_app(
+      project: XCODEPROJ,
+      scheme: SCHEME,
+      export_method: "app-store",
+    )
+
+    upload_to_testflight(
+      api_key: api_key,
+      skip_waiting_for_build_processing: true,
+    )
+  end
+end

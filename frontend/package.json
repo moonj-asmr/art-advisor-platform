@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@capacitor/cli": "^8.4.2",
+    "@capacitor/core": "^8.4.2",
+    "@capacitor/ios": "^8.4.2",
     "@radix-ui/react-tabs": "^1.0.4",
     "@types/node": "^20.10.0",
     "lucide-react": "^0.292.0",
