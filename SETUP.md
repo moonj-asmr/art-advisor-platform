@@ -21,12 +21,13 @@ Xcode by hand — CI does everything on a macOS runner.
 
 ## Configuration (GitHub → repo Settings → Secrets and variables → Actions)
 
-**Variables** (plain text):
+**Variables** (plain text — all three have working defaults committed in the
+workflow, so setting them is only needed if a value ever changes):
 
-| Name | Value |
+| Name | Default |
 |---|---|
-| `APPLE_TEAM_ID` | 10-character team ID from developer.apple.com → Membership |
-| `RAILWAY_APP_URL` | `https://…up.railway.app` — the backend the app talks to |
+| `APPLE_TEAM_ID` | `MY9X7AJBKT` |
+| `RAILWAY_APP_URL` | `https://art-advisor-platform-production.up.railway.app` |
 | `MATCH_GIT_URL` | `https://github.com/moonj-asmr/advisorydeck-certificates.git` |
 
 **Secrets**:
