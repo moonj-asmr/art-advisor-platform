@@ -43,3 +43,7 @@ yarn-debug.log*
 yarn-error.log*
 # App data (SQLite DB, extracted images)
 backend/data/
+
+# local bundler install (used for inspecting pinned gem sources)
+.bundle/
+vendor/bundle/
