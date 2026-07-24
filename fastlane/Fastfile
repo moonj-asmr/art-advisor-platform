@@ -51,6 +51,10 @@ platform :ios do
 
   desc "Build, sign, and upload to TestFlight"
   lane :beta do
+    # CI runners have no keychain; without this, importing the signing
+    # certificate hangs forever on a keychain prompt no one can answer
+    setup_ci
+
     api_key = asc_api_key
 
     # decrypt (or on the very first run, create) the signing certificate and
