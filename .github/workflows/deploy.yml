@@ -4,18 +4,19 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch: # manual compile check on any branch
 
 jobs:
-  # Pull requests: compile the iOS app, no signing, no upload.
+  # Pull requests (and manual runs): compile the iOS app, no signing, no upload.
   build_check:
-    if: github.event_name == 'pull_request'
+    if: github.event_name != 'push'
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
@@ -47,7 +48,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
