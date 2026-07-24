@@ -26,7 +26,7 @@ jobs:
           npm run build
           npx cap sync ios
         env:
-          VITE_API_URL: ${{ vars.RAILWAY_APP_URL }}
+          VITE_API_URL: ${{ vars.RAILWAY_APP_URL || 'https://art-advisor-platform-production.up.railway.app' }}
 
       - uses: ruby/setup-ruby@v1
         with:
@@ -56,7 +56,7 @@ jobs:
           npm run build
           npx cap sync ios
         env:
-          VITE_API_URL: ${{ vars.RAILWAY_APP_URL }}
+          VITE_API_URL: ${{ vars.RAILWAY_APP_URL || 'https://art-advisor-platform-production.up.railway.app' }}
 
       - uses: ruby/setup-ruby@v1
         with:
@@ -66,8 +66,8 @@ jobs:
       - name: Build, sign, and upload to TestFlight
         run: bundle exec fastlane ios beta
         env:
-          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
-          MATCH_GIT_URL: ${{ vars.MATCH_GIT_URL }}
+          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID || 'MY9X7AJBKT' }}
+          MATCH_GIT_URL: ${{ vars.MATCH_GIT_URL || 'https://github.com/moonj-asmr/advisorydeck-certificates.git' }}
           APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
           APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
