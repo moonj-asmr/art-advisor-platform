@@ -78,3 +78,63 @@ jobs:
           APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
           MATCH_REPO_PAT: ${{ secrets.MATCH_REPO_PAT }}
+
+  # Manual-only: proves every secret works before the first real signing run.
+  # Nothing is created anywhere — read/write probe on the certificates repo
+  # plus a read-only App Store Connect API call.
+  preflight:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: All five secrets present
+        env:
+          A: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          B: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          C: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
+          D: ${{ secrets.MATCH_PASSWORD }}
+          E: ${{ secrets.MATCH_REPO_PAT }}
+        run: |
+          ok=1
+          for pair in "APP_STORE_CONNECT_API_KEY_ID:$A" "APP_STORE_CONNECT_API_ISSUER_ID:$B" "APP_STORE_CONNECT_API_KEY_CONTENT:$C" "MATCH_PASSWORD:$D" "MATCH_REPO_PAT:$E"; do
+            name="${pair%%:*}"; val="${pair#*:}"
+            if [ -z "$val" ]; then echo "MISSING: $name"; ok=0; else echo "present: $name"; fi
+          done
+          [ "$ok" = "1" ]
+
+      - name: MATCH_REPO_PAT can read and write the certificates repo
+        env:
+          MATCH_REPO_PAT: ${{ secrets.MATCH_REPO_PAT }}
+        run: |
+          URL="https://x-access-token:${MATCH_REPO_PAT}@github.com/moonj-asmr/advisorydeck-certificates.git"
+          git ls-remote "$URL" > /dev/null && echo "read OK"
+          tmp=$(mktemp -d) && cd "$tmp" && git init -q . \
+            && git -c user.email=ci@local -c user.name=ci commit --allow-empty -qm probe \
+            && git push -q "$URL" HEAD:refs/heads/__pat-probe \
+            && git push -q "$URL" :refs/heads/__pat-probe \
+            && echo "write OK (probe ref created and removed)"
+
+      - name: App Store Connect API key authenticates
+        env:
+          KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
+        run: |
+          sudo gem install jwt --no-document -q
+          TOKEN=$(ruby -r jwt -r openssl -e '
+            key = OpenSSL::PKey.read(ENV["KEY_CONTENT"])
+            now = Time.now.to_i
+            puts JWT.encode({iss: ENV["ISSUER_ID"], iat: now, exp: now + 600, aud: "appstoreconnect-v1"}, key, "ES256", {kid: ENV["KEY_ID"]})
+          ')
+          RESP=$(curl -s -w "\n%{http_code}" -H "Authorization: Bearer $TOKEN" \
+            "https://api.appstoreconnect.apple.com/v1/apps?fields%5Bapps%5D=bundleId,name")
+          CODE=$(echo "$RESP" | tail -1)
+          BODY=$(echo "$RESP" | sed '$d')
+          echo "HTTP $CODE"
+          [ "$CODE" = "200" ] || { echo "API key failed"; echo "$BODY" | head -5; exit 1; }
+          echo "API key OK. Apps in the account:"
+          echo "$BODY" | ruby -r json -e 'JSON.parse(STDIN.read)["data"].each { |a| puts "  #{a["attributes"]["name"]} - #{a["attributes"]["bundleId"]}" }'
+          if echo "$BODY" | grep -q "com.advisorydeck.app"; then
+            echo "app record com.advisorydeck.app EXISTS"
+          else
+            echo "WARNING: no app record with bundle ID com.advisorydeck.app yet - create it in App Store Connect before the first TestFlight upload"
+          fi
