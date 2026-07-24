@@ -120,8 +120,17 @@ jobs:
           KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
         run: |
           sudo gem install jwt --no-document -q
-          TOKEN=$(ruby -r jwt -r openssl -e '
-            key = OpenSSL::PKey.read(ENV["KEY_CONTENT"])
+          TOKEN=$(ruby -r jwt -r openssl -r base64 -e '
+            raw = ENV["KEY_CONTENT"].strip.gsub("\\n", "\n")
+            if raw.include?("BEGIN") && !raw.include?("\n")
+              b64 = raw[/BEGIN PRIVATE KEY-{5}(.*?)-{5}END/m, 1].to_s.gsub(/\s+/, "")
+              raw = "-----BEGIN PRIVATE KEY-----\n" + b64.scan(/.{1,64}/).join("\n") + "\n-----END PRIVATE KEY-----\n"
+            end
+            key = begin
+              OpenSSL::PKey.read(raw)
+            rescue OpenSSL::PKey::PKeyError
+              OpenSSL::PKey.read(Base64.decode64(raw))
+            end
             now = Time.now.to_i
             puts JWT.encode({iss: ENV["ISSUER_ID"], iat: now, exp: now + 600, aud: "appstoreconnect-v1"}, key, "ES256", {kid: ENV["KEY_ID"]})
           ')
