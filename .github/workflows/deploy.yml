@@ -107,11 +107,18 @@ jobs:
         run: |
           URL="https://x-access-token:${MATCH_REPO_PAT}@github.com/moonj-asmr/advisorydeck-certificates.git"
           git ls-remote "$URL" > /dev/null && echo "read OK"
-          tmp=$(mktemp -d) && cd "$tmp" && git init -q . \
-            && git -c user.email=ci@local -c user.name=ci commit --allow-empty -qm probe \
-            && git push -q "$URL" HEAD:refs/heads/__pat-probe \
-            && git push -q "$URL" :refs/heads/__pat-probe \
-            && echo "write OK (probe ref created and removed)"
+          tmp=$(mktemp -d) && cd "$tmp" && git init -q -b main . \
+            && git -c user.email=ci@local -c user.name=ci commit --allow-empty -qm "CI write probe"
+          if git ls-remote --heads "$URL" | grep -q .; then
+            # repo has branches: create and remove a throwaway ref
+            git push -q "$URL" HEAD:refs/heads/__pat-probe-2 \
+              && git push -q "$URL" :refs/heads/__pat-probe-2 \
+              && echo "write OK (probe ref created and removed)"
+          else
+            # empty repo: the first pushed branch becomes the default and
+            # cannot be deleted — initialize it as main instead
+            git push -q "$URL" HEAD:refs/heads/main && echo "write OK (initialized empty repo with main)"
+          fi
 
       - name: App Store Connect API key authenticates
         env:
