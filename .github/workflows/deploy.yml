@@ -9,7 +9,7 @@ jobs:
   # Pull requests: compile the iOS app, no signing, no upload.
   build_check:
     if: github.event_name == 'pull_request'
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
 
@@ -23,6 +23,8 @@ jobs:
         working-directory: frontend
         run: |
           npm ci
+          # lockfiles written on Linux omit the macOS bundler binary (npm bug #4828)
+          npm i --no-save @rollup/rollup-darwin-arm64
           npm run build
           npx cap sync ios
         env:
@@ -39,7 +41,7 @@ jobs:
   # Pushes to main: signed release straight to TestFlight.
   beta:
     if: github.event_name == 'push'
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
 
@@ -53,6 +55,8 @@ jobs:
         working-directory: frontend
         run: |
           npm ci
+          # lockfiles written on Linux omit the macOS bundler binary (npm bug #4828)
+          npm i --no-save @rollup/rollup-darwin-arm64
           npm run build
           npx cap sync ios
         env:
