@@ -1,0 +1,4 @@
+# Values come from CI configuration, never from this file:
+#   APPLE_TEAM_ID — GitHub Actions variable (Settings → Secrets and variables → Actions → Variables)
+app_identifier("com.advisorydeck.app")
+team_id(ENV["APPLE_TEAM_ID"])

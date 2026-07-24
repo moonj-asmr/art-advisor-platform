@@ -1,0 +1,6 @@
+# Code signing via fastlane match: certificates and profiles live encrypted
+# in a separate private repo, decrypted in CI with MATCH_PASSWORD.
+git_url(ENV["MATCH_GIT_URL"] || "https://github.com/moonj-asmr/advisorydeck-certificates.git")
+storage_mode("git")
+type("appstore")
+app_identifier(["com.advisorydeck.app"])
