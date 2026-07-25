@@ -113,7 +113,7 @@ export const SwipeCard: React.FC<Props> = ({ artwork, active, stackIndex, onDeci
             {artwork.detail_image_urls.length > 0 && (
               <div className="grid grid-cols-2 gap-2 mb-4">
                 {artwork.detail_image_urls.map((u) => (
-                  <img crossOrigin="anonymous" key={u} src={mediaUrl(u)} className="rounded-lg w-full object-cover" draggable={false} />
+                  <img key={u} src={mediaUrl(u)} className="rounded-lg w-full object-cover" draggable={false} />
                 ))}
               </div>
             )}
@@ -127,7 +127,7 @@ export const SwipeCard: React.FC<Props> = ({ artwork, active, stackIndex, onDeci
             <div className="flex-1 bg-zinc-50 overflow-hidden flex items-center justify-center">
               {artwork.image_url ? (
                 <img
-                  crossOrigin="anonymous" src={mediaUrl(artwork.image_url)}
+                  src={mediaUrl(artwork.image_url)}
                   alt={artwork.title}
                   className="w-full h-full object-contain"
                   draggable={false}

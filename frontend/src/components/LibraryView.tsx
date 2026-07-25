@@ -284,7 +284,7 @@ export const LibraryView: React.FC<Props> = ({
                   )}
                   <div className="bg-zinc-100">
                     {a.image_url ? (
-                      <img crossOrigin="anonymous" src={mediaUrl(a.image_url)} alt={a.title} className="w-full h-auto" />
+                      <img src={mediaUrl(a.image_url)} alt={a.title} className="w-full h-auto" />
                     ) : (
                       <div className="aspect-square flex items-center justify-center">
                         <span className="text-xs text-zinc-400">No image</span>
