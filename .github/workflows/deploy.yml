@@ -188,13 +188,50 @@ jobs:
             MSG
           end
           label, body = winner
+          token = attempts[label]
           puts "API key OK (#{label}). Apps in the account:"
           apps = JSON.parse(body)["data"]
           apps.each { |a| puts "  #{a["attributes"]["name"]} - #{a["attributes"]["bundleId"]}" }
-          if apps.any? { |a| a["attributes"]["bundleId"] == "com.advisorydeck.app" }
-            puts "app record com.advisorydeck.app EXISTS"
-          else
+          app = apps.find { |a| a["attributes"]["bundleId"] == "com.advisorydeck.app" }
+          unless app
             puts "WARNING: no app record with bundle ID com.advisorydeck.app yet - create it in App Store Connect before the first TestFlight upload"
+            exit 0
+          end
+          puts "app record com.advisorydeck.app EXISTS"
+
+          # What TestFlight actually has. A build only reaches testers once
+          # processingState is VALID and export compliance is answered, so this
+          # says whether a missing update is Apple still chewing or something
+          # waiting on a human.
+          get = lambda do |path|
+            u = URI("https://api.appstoreconnect.apple.com#{path}")
+            res = Net::HTTP.start(u.host, u.port, use_ssl: true) do |http|
+              r = Net::HTTP::Get.new(u)
+              r["Authorization"] = "Bearer #{token}"
+              http.request(r)
+            end
+            res.code == "200" ? JSON.parse(res.body) : nil
+          end
+          builds = get.call("/v1/builds?filter%5Bapp%5D=#{app["id"]}&limit=8&sort=-version" \
+                            "&fields%5Bbuilds%5D=version,processingState,uploadedDate,expired,usesNonExemptEncryption")
+          puts "\nTestFlight builds (newest first):"
+          if builds.nil? || builds["data"].empty?
+            puts "  none yet"
+          else
+            builds["data"].each do |b|
+              at = b["attributes"]
+              flags = []
+              flags << "EXPIRED" if at["expired"]
+              flags << "export compliance UNANSWERED" if at["usesNonExemptEncryption"].nil?
+              puts "  build #{at["version"].to_s.ljust(4)} #{at["processingState"].to_s.ljust(10)} " \
+                   "uploaded #{at["uploadedDate"]}#{flags.empty? ? "" : "  <-- #{flags.join(", ")}"}"
+            end
+            newest = builds["data"].first["attributes"]
+            case newest["processingState"]
+            when "PROCESSING" then puts "\n-> newest build is still processing at Apple; testers are notified when it turns VALID"
+            when "VALID"      then puts "\n-> newest build is VALID and available to testers"
+            else                   puts "\n-> newest build is #{newest["processingState"]} - it will NOT reach testers"
+            end
           end
           if label.include?("Individual")
             puts "NOTE: this is an Individual API key; the signing pipeline is set up for a Team key. Create a Team key instead, or ask Claude to switch the pipeline to individual-key auth."
