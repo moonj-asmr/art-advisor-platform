@@ -45,7 +45,7 @@ export const ArtworkDetail: React.FC<Props> = ({ artwork: a, collections, onEdit
       <div className="flex-1 overflow-y-auto px-4" style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 1.5rem)' }}>
         <div className="bg-zinc-100 rounded-2xl overflow-hidden flex items-center justify-center">
           {a.image_url ? (
-            <img src={mediaUrl(a.image_url)} alt={a.title} className="w-full max-h-[52vh] object-contain" />
+            <img crossOrigin="anonymous" src={mediaUrl(a.image_url)} alt={a.title} className="w-full max-h-[52vh] object-contain" />
           ) : (
             <span className="text-xs text-zinc-400 py-16">No image</span>
           )}
@@ -77,7 +77,7 @@ export const ArtworkDetail: React.FC<Props> = ({ artwork: a, collections, onEdit
             <p className="mt-4 text-sm text-zinc-600 whitespace-pre-line leading-relaxed">{a.description}</p>
           )}
           {a.detail_image_urls.map((u) => (
-            <img key={u} src={mediaUrl(u)} alt="Additional view" className="mt-3 w-full rounded-2xl border border-zinc-200" />
+            <img crossOrigin="anonymous" key={u} src={mediaUrl(u)} alt="Additional view" className="mt-3 w-full rounded-2xl border border-zinc-200" />
           ))}
         </div>
 
