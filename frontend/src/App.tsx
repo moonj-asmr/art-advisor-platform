@@ -196,7 +196,7 @@ function App() {
       <nav
         className="absolute left-3 right-3 z-30 rounded-full flex items-center gap-1 p-1.5 border border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.16)] overflow-hidden"
         style={{
-          bottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)',
+          bottom: 'var(--nav-bottom)',
           backgroundColor: 'rgba(255,255,255,0.62)',
           WebkitBackdropFilter: 'blur(24px) saturate(1.8)',
           backdropFilter: 'blur(24px) saturate(1.8)',
