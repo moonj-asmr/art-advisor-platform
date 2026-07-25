@@ -25,10 +25,13 @@
     -webkit-tap-highlight-color: transparent;
   }
   :root {
-    /* The floating glass tab bar overlays content: its bottom offset
-       (safe area + 8px) plus its height (64px) plus a breathing gap.
-       Scrollable views pad their bottom by this so nothing hides under it. */
-    --nav-clearance: calc(env(safe-area-inset-bottom, 0px) + 84px);
+    /* The floating glass tab bar hugs the screen edge like native Apple tab
+       bars - it dips into the safe area so only a small margin remains below
+       it (the home indicator overlaps the space beneath the pill). */
+    --nav-bottom: max(calc(env(safe-area-inset-bottom, 0px) - 20px), 6px);
+    /* bar bottom offset + bar height (68px) + breathing gap; scrollable
+       views pad their bottom by this so nothing hides under the bar */
+    --nav-clearance: calc(var(--nav-bottom) + 76px);
   }
 }
 
