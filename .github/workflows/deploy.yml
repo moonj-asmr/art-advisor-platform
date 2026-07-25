@@ -32,6 +32,11 @@ jobs:
         env:
           VITE_API_URL: ${{ vars.RAILWAY_APP_URL || 'https://art-advisor-platform-production.up.railway.app' }}
 
+      # Apple requires the iOS 26 SDK for App Store uploads; the runner's
+      # default Xcode is older, so pick the newest Xcode 26 installed.
+      - name: Select Xcode 26
+        run: sudo xcode-select -s "$(ls -d /Applications/Xcode_26.*.app | sort -V | tail -n 1)"
+
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.3"
@@ -64,6 +69,11 @@ jobs:
           npx cap sync ios
         env:
           VITE_API_URL: ${{ vars.RAILWAY_APP_URL || 'https://art-advisor-platform-production.up.railway.app' }}
+
+      # Apple requires the iOS 26 SDK for App Store uploads; the runner's
+      # default Xcode is older, so pick the newest Xcode 26 installed.
+      - name: Select Xcode 26
+        run: sudo xcode-select -s "$(ls -d /Applications/Xcode_26.*.app | sort -V | tail -n 1)"
 
       - uses: ruby/setup-ruby@v1
         with:
