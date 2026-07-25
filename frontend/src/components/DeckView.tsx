@@ -56,7 +56,7 @@ export const DeckView: React.FC<Props> = ({
 
   if (!top) {
     return (
-      <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex-1 flex flex-col min-h-0 pb-nav">
         {reviewBanner}
         <div className="flex-1 flex flex-col items-center justify-center text-center px-8 gap-3">
         <div className="text-4xl">🎨</div>
@@ -79,7 +79,7 @@ export const DeckView: React.FC<Props> = ({
   }
 
   return (
-    <div className="flex-1 flex flex-col px-4 pb-3 min-h-0">
+    <div className="flex-1 flex flex-col px-4 pb-nav min-h-0">
       {reviewBanner}
       <div className="relative flex-1 min-h-0 my-2">
         {pending.slice(0, 4).map((artwork, i) => (

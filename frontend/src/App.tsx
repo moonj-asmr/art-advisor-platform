@@ -191,11 +191,16 @@ function App() {
         )}
       </main>
 
-      {/* permanent bottom nav — sits at the very bottom of the screen, with
-          the iOS home indicator overlapping the tab pills themselves */}
+      {/* floating glass tab bar — a translucent pill hovering above the safe
+          area, content scrolling behind it (views pad by --nav-clearance) */}
       <nav
-        className="shrink-0 z-30 bg-white rounded-t-2xl shadow-[0_-4px_16px_rgba(0,0,0,0.07)] flex items-center gap-1 px-4 pt-2.5"
-        style={{ paddingBottom: 'max(calc(env(safe-area-inset-bottom) - 8px), 0.6rem)' }}
+        className="absolute left-3 right-3 z-30 rounded-full flex items-center gap-1 p-1.5 border border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.16)] overflow-hidden"
+        style={{
+          bottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)',
+          backgroundColor: 'rgba(255,255,255,0.62)',
+          WebkitBackdropFilter: 'blur(24px) saturate(1.8)',
+          backdropFilter: 'blur(24px) saturate(1.8)',
+        }}
       >
         {([
           ['deck', Layers, 'Deck', pending.length],
@@ -205,15 +210,15 @@ function App() {
           <button
             key={key}
             onClick={() => setTab(key)}
-            className={`relative flex-1 h-[52px] flex items-center justify-center gap-1.5 text-sm rounded-full ${
-              tab === key ? 'bg-zinc-900 text-white font-medium' : 'text-zinc-500'
+            className={`relative flex-1 h-[50px] flex items-center justify-center gap-1.5 text-sm rounded-full transition-colors ${
+              tab === key ? 'bg-zinc-900 text-white font-medium shadow' : 'text-zinc-600'
             }`}
           >
             <Icon className="w-4 h-4" />
             {label}
             {badge > 0 && (
               <span className={`text-[10px] font-bold rounded-full min-w-[15px] h-[15px] px-1 flex items-center justify-center ${
-                tab === key ? 'bg-white text-zinc-900' : 'bg-zinc-200 text-zinc-700'
+                tab === key ? 'bg-white text-zinc-900' : 'bg-zinc-300/70 text-zinc-700'
               }`}>
                 {badge}
               </span>
