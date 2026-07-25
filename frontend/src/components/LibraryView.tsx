@@ -1,6 +1,7 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeftRight, CheckCircle2, FileDown, FolderCog, FolderMinus, FolderPlus, Layers, Pencil, Share } from 'lucide-react';
 import { api, mediaUrl } from '../lib/api';
+import { shareArtwork } from '../lib/share';
 import type { Artwork, Collection } from '../types';
 import { ArtworkDetail } from './ArtworkDetail';
 import { CollectionPicker } from './CollectionPicker';
