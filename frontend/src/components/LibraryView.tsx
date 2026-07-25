@@ -186,7 +186,7 @@ export const LibraryView: React.FC<Props> = ({
                 {label}
                 {count > 0 && (
                   <span className={`text-[10px] font-bold rounded-full min-w-[16px] h-[16px] px-1 flex items-center justify-center ${
-                    segment === key && key === 'liked' ? 'bg-zinc-900 text-white' : 'bg-zinc-200 text-zinc-600'
+                    segment === key && key === 'liked' ? 'bg-blue-900 text-white' : 'bg-zinc-200 text-zinc-600'
                   }`}>
                     {count}
                   </span>
@@ -198,7 +198,7 @@ export const LibraryView: React.FC<Props> = ({
           {segment === 'liked' && shown.length > 0 && !selectMode && (
             <button
               onClick={() => setExporting(true)}
-              className="flex items-center gap-1.5 bg-emerald-600 text-white text-sm font-semibold rounded-full px-4 py-2 whitespace-nowrap shrink-0 hover:bg-emerald-500"
+              className="btn-export text-sm px-4 py-2 whitespace-nowrap shrink-0"
             >
               <FileDown className="w-4 h-4" />
               Export
@@ -209,7 +209,7 @@ export const LibraryView: React.FC<Props> = ({
               onClick={() =>
                 setChecked(checked.length === shown.length ? [] : shown.map((a) => a.id))
               }
-              className="text-[13px] rounded-full px-3.5 py-2 border border-zinc-200 text-zinc-600 whitespace-nowrap shrink-0"
+              className="btn-quiet bg-transparent text-[13px] px-3.5 py-2 whitespace-nowrap shrink-0"
             >
               {checked.length === shown.length ? 'Deselect all' : 'Select all'}
             </button>
@@ -234,7 +234,7 @@ export const LibraryView: React.FC<Props> = ({
             <button
               title="Manage collections"
               onClick={() => setManaging(true)}
-              className="p-2 rounded-full border border-zinc-200 text-zinc-400 hover:text-zinc-900 shrink-0"
+              className="icon-btn bg-transparent border border-zinc-200 text-zinc-400"
             >
               <FolderCog className="w-4 h-4" />
             </button>
@@ -242,7 +242,7 @@ export const LibraryView: React.FC<Props> = ({
           <div className="flex-1" />
           <button
             onClick={() => (selectMode ? exitSelect() : enterSelectMode())}
-            className={`text-[13px] rounded-full px-3.5 py-2 border shrink-0 ${selectMode ? 'bg-zinc-900 text-white border-zinc-900' : 'border-zinc-200 text-zinc-500'}`}
+            className={`text-[13px] rounded-full px-3.5 py-2 border shrink-0 transition-colors ${selectMode ? 'bg-blue-900 text-white border-blue-900 font-semibold' : 'border-zinc-200 text-zinc-500'}`}
           >
             {selectMode ? 'Done' : 'Organize'}
           </button>
@@ -269,14 +269,14 @@ export const LibraryView: React.FC<Props> = ({
                 <div
                   key={a.id}
                   onClick={() => (selectMode ? toggleCheck(a.id) : setViewing(a))}
-                  className={`relative bg-white rounded-xl overflow-hidden border ${
-                    selectMode && isChecked ? 'border-zinc-900 ring-2 ring-zinc-900' : 'border-zinc-200'
+                  className={`relative bg-white rounded-2xl overflow-hidden border ${
+                    selectMode && isChecked ? 'border-blue-900 ring-2 ring-blue-900' : 'border-zinc-200'
                   }`}
                 >
                   {selectMode && (
                     <span
-                      className={`absolute top-2 right-2 z-10 w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                        isChecked ? 'bg-zinc-900 border-zinc-900 text-white' : 'bg-white/80 border-zinc-400 text-transparent'
+                      className={`absolute top-2 right-2 z-10 w-7 h-7 rounded-full border-2 flex items-center justify-center ${
+                        isChecked ? 'bg-blue-900 border-blue-900 text-white' : 'bg-white/80 border-zinc-400 text-transparent'
                       }`}
                     >
                       <CheckCircle2 className="w-4 h-4" />
@@ -302,19 +302,19 @@ export const LibraryView: React.FC<Props> = ({
                       <div className="text-[10px] text-zinc-400 truncate mt-0.5">{a.gallery}</div>
                     )}
                     {!selectMode && (
-                      <div className="flex items-center gap-1 mt-2">
-                        <button title="Edit caption" onClick={(e) => { e.stopPropagation(); openEdit(a); }} className="p-1.5 rounded-md bg-zinc-100 text-zinc-500 hover:text-zinc-900">
-                          <Pencil className="w-3.5 h-3.5" />
+                      <div className="flex items-center gap-1.5 mt-2">
+                        <button title="Edit caption" onClick={(e) => { e.stopPropagation(); openEdit(a); }} className="icon-btn">
+                          <Pencil className="w-4 h-4" />
                         </button>
-                        <button title="Share" onClick={(e) => { e.stopPropagation(); shareArtwork(a); }} className="p-1.5 rounded-md bg-zinc-100 text-zinc-500 hover:text-zinc-900">
-                          <Share className="w-3.5 h-3.5" />
+                        <button title="Share" onClick={(e) => { e.stopPropagation(); shareArtwork(a); }} className="icon-btn">
+                          <Share className="w-4 h-4" />
                         </button>
                         <button
                           title={segment === 'liked' ? 'Move to Passed' : 'Move to Selects'}
                           onClick={(e) => { e.stopPropagation(); swapOne(a); }}
-                          className="p-1.5 rounded-md bg-zinc-100 text-zinc-500 hover:text-zinc-900 ml-auto"
+                          className="icon-btn ml-auto"
                         >
-                          <ArrowLeftRight className="w-3.5 h-3.5" />
+                          <ArrowLeftRight className="w-4 h-4" />
                         </button>
                       </div>
                     )}
@@ -332,47 +332,47 @@ export const LibraryView: React.FC<Props> = ({
       {/* multi-select action lozenge — the one floating lozenge left, popping
           up just above the permanent bottom nav */}
       {actionBarOpen && showHint && nothingChecked && (
-        <div className="absolute left-1/2 -translate-x-1/2 z-30 bg-zinc-900 text-white text-xs rounded-full px-4 py-2 shadow-lg whitespace-nowrap" style={{ bottom: 'calc(var(--nav-clearance) + 56px)' }}>
+        <div className="glass absolute left-1/2 -translate-x-1/2 z-30 text-zinc-700 text-xs font-medium rounded-full px-4 py-2 whitespace-nowrap" style={{ bottom: 'calc(var(--actionbar-bottom) + 60px)' }}>
           Tap works to select them
         </div>
       )}
       {actionBarOpen && (
-        // icon-only round buttons — everything fits at once, no scrolling;
-        // each carries a title for what it does
-        <div className="absolute left-4 right-4 z-30 h-[52px] bg-white/95 backdrop-blur border border-zinc-200 shadow-[0_8px_24px_rgba(0,0,0,0.14)] rounded-full px-3 flex items-center gap-2" style={{ bottom: 'calc(var(--nav-clearance) - 4px)' }}>
-          <span className={`text-xs font-bold rounded-full min-w-[24px] h-6 px-1.5 flex items-center justify-center shrink-0 ${
-            nothingChecked ? 'bg-zinc-100 text-zinc-400' : 'bg-zinc-900 text-white'
+        // a second glass pill, identical material to the tab bar, stacked
+        // directly above it — icon-only so everything fits without scrolling
+        <div className="glass-bar h-[56px] px-2.5 flex items-center gap-2" style={{ bottom: 'var(--actionbar-bottom)' }}>
+          <span className={`text-xs font-bold rounded-full min-w-[26px] h-[26px] px-1.5 flex items-center justify-center shrink-0 ${
+            nothingChecked ? 'bg-zinc-900/[0.07] text-zinc-400' : 'bg-blue-900 text-white'
           }`}>
             {checked.length}
           </span>
-          <span className="w-px self-stretch my-3 bg-zinc-200 shrink-0" />
+          <span className="w-px self-stretch my-3 bg-zinc-900/10 shrink-0" />
           <div className="flex-1 flex items-center justify-evenly">
             <button
               aria-label="Add to collection"
               title="Add to collection"
               disabled={nothingChecked}
               onClick={() => setPicking(true)}
-              className="w-10 h-10 rounded-full bg-zinc-900 text-white flex items-center justify-center disabled:opacity-35"
+              className="icon-btn-accent"
             >
-              <FolderPlus className="w-[18px] h-[18px]" />
+              <FolderPlus className="w-5 h-5" />
             </button>
             <button
               aria-label={segment === 'liked' ? 'Move to Passed' : 'Move to Selects'}
               title={segment === 'liked' ? 'Move to Passed' : 'Move to Selects'}
               disabled={nothingChecked}
               onClick={bulkSwap}
-              className="w-10 h-10 rounded-full bg-zinc-100 text-zinc-700 flex items-center justify-center disabled:opacity-35"
+              className="icon-btn-glass"
             >
-              <ArrowLeftRight className="w-[18px] h-[18px]" />
+              <ArrowLeftRight className="w-5 h-5" />
             </button>
             <button
               aria-label="Back to the deck"
               title="Back to the deck"
               disabled={nothingChecked}
               onClick={bulkBackToDeck}
-              className="w-10 h-10 rounded-full bg-zinc-100 text-zinc-700 flex items-center justify-center disabled:opacity-35"
+              className="icon-btn-glass"
             >
-              <Layers className="w-[18px] h-[18px]" />
+              <Layers className="w-5 h-5" />
             </button>
             {typeof filter === 'number' && (
               <button
@@ -380,9 +380,9 @@ export const LibraryView: React.FC<Props> = ({
                 title={`Remove from ${collectionName(filter)}`}
                 disabled={nothingChecked}
                 onClick={bulkRemoveFromCollection}
-                className="w-10 h-10 rounded-full bg-zinc-100 text-rose-600 flex items-center justify-center disabled:opacity-35"
+                className="icon-btn-danger"
               >
-                <FolderMinus className="w-[18px] h-[18px]" />
+                <FolderMinus className="w-5 h-5" />
               </button>
             )}
             {segment === 'liked' && (
@@ -391,9 +391,9 @@ export const LibraryView: React.FC<Props> = ({
                 title="Export selection"
                 disabled={nothingChecked}
                 onClick={() => setExportingChecked(true)}
-                className="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center disabled:opacity-35"
+                className="icon-btn-export"
               >
-                <FileDown className="w-[18px] h-[18px]" />
+                <FileDown className="w-5 h-5" />
               </button>
             )}
           </div>
@@ -421,13 +421,13 @@ export const LibraryView: React.FC<Props> = ({
             <label key={key} className="block mb-3">
               <span className="text-xs text-zinc-500">{label}</span>
               <input
-                className="mt-1 w-full bg-white border border-zinc-300 rounded-lg px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:border-zinc-500"
+                className="field mt-1 w-full px-3 py-2 text-sm"
                 value={(form[key] as string) ?? ''}
                 onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
               />
             </label>
           ))}
-          <button onClick={saveEdit} className="w-full bg-zinc-900 text-white font-semibold rounded-lg py-2.5 mt-2 hover:bg-zinc-700">
+          <button onClick={saveEdit} className="btn-primary w-full py-3 mt-2">
             Save
           </button>
         </Sheet>

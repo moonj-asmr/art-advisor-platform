@@ -37,13 +37,13 @@ export const ArtworkDetail: React.FC<Props> = ({ artwork: a, collections, onEdit
         style={{ paddingTop: 'calc(env(safe-area-inset-top) + 10px)' }}
       >
         <span className="text-sm text-zinc-500">{a.status === 'liked' ? 'In your selects' : 'Passed'}</span>
-        <button aria-label="Close" onClick={onClose} className="p-2.5 rounded-full bg-zinc-100 text-zinc-600 hover:text-zinc-900">
+        <button aria-label="Close" onClick={onClose} className="icon-btn w-10 h-10">
           <X className="w-5 h-5" />
         </button>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4" style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 1.5rem)' }}>
-        <div className="bg-zinc-100 rounded-xl overflow-hidden flex items-center justify-center">
+        <div className="bg-zinc-100 rounded-2xl overflow-hidden flex items-center justify-center">
           {a.image_url ? (
             <img src={mediaUrl(a.image_url)} alt={a.title} className="w-full max-h-[52vh] object-contain" />
           ) : (
@@ -77,22 +77,22 @@ export const ArtworkDetail: React.FC<Props> = ({ artwork: a, collections, onEdit
             <p className="mt-4 text-sm text-zinc-600 whitespace-pre-line leading-relaxed">{a.description}</p>
           )}
           {a.detail_image_urls.map((u) => (
-            <img key={u} src={mediaUrl(u)} alt="Additional view" className="mt-3 w-full rounded-xl border border-zinc-200" />
+            <img key={u} src={mediaUrl(u)} alt="Additional view" className="mt-3 w-full rounded-2xl border border-zinc-200" />
           ))}
         </div>
 
         {/* one row, three equal buttons — labels kept short so nothing wraps */}
         <div className="mt-5 flex gap-2">
           <button onClick={(e) => { e.stopPropagation(); share(); }} disabled={sharing}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 bg-zinc-900 text-white rounded-full text-[13px] font-semibold disabled:opacity-60">
+                  className="btn-primary flex-1 px-2 py-3 text-[13px]">
             <Share className="w-4 h-4" /> {sharing ? 'Sharing…' : 'Share'}
           </button>
           <button title="Edit caption" onClick={(e) => { e.stopPropagation(); onEdit(); }}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 bg-zinc-100 border border-zinc-200 rounded-full text-[13px] text-zinc-700 hover:text-zinc-900">
+                  className="btn-quiet flex-1 px-2 py-3 text-[13px]">
             <Pencil className="w-4 h-4" /> Edit
           </button>
           <button onClick={(e) => { e.stopPropagation(); onSwap(); }}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 bg-zinc-100 border border-zinc-200 rounded-full text-[13px] text-zinc-700 hover:text-zinc-900">
+                  className="btn-quiet flex-1 px-2 py-3 text-[13px]">
             <ArrowLeftRight className="w-4 h-4" /> {a.status === 'liked' ? 'To Passed' : 'To Selects'}
           </button>
         </div>

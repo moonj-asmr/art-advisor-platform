@@ -82,7 +82,7 @@ export const CollectionPicker: React.FC<Props> = ({
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as SortKey)}
-              className="bg-transparent border border-zinc-200 text-zinc-500 text-xs rounded-full px-2.5 py-1.5 focus:outline-none"
+              className="bg-transparent border border-zinc-200 text-zinc-500 text-xs rounded-full px-2.5 py-1.5 focus:outline-none focus:border-blue-900"
             >
               {SORTS.map(([key, label]) => (
                 <option key={key} value={key}>Sort: {label}</option>
@@ -94,7 +94,7 @@ export const CollectionPicker: React.FC<Props> = ({
           {includeGeneral && (
             <button
               onClick={() => setChosen([])}
-              className={`w-full flex items-center justify-between rounded-xl border px-4 py-3 text-left ${
+              className={`w-full flex items-center justify-between rounded-2xl border px-4 py-3 text-left ${
                 chosen.length === 0 ? 'border-zinc-900 bg-zinc-50' : 'border-zinc-200'
               }`}
             >
@@ -104,7 +104,7 @@ export const CollectionPicker: React.FC<Props> = ({
               </div>
               <span
                 className={`w-5 h-5 rounded-full border flex items-center justify-center ${
-                  chosen.length === 0 ? 'bg-zinc-900 border-zinc-900 text-white' : 'border-zinc-300 text-transparent'
+                  chosen.length === 0 ? 'bg-blue-900 border-blue-900 text-white' : 'border-zinc-300 text-transparent'
                 }`}
               >
                 <Check className="w-3.5 h-3.5" />
@@ -118,7 +118,7 @@ export const CollectionPicker: React.FC<Props> = ({
             const on = chosen.includes(c.id);
             const row = (
               <div
-                className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 bg-white ${
+                className={`flex items-center gap-2 rounded-2xl border px-3 py-2.5 bg-white ${
                   on ? 'border-zinc-900 bg-zinc-50' : 'border-zinc-200'
                 }`}
               >
@@ -129,9 +129,9 @@ export const CollectionPicker: React.FC<Props> = ({
                       onChange={(e) => setRenameValue(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && saveRename()}
                       autoFocus
-                      className="flex-1 min-w-0 bg-white border border-zinc-300 rounded-md px-2 py-1.5 text-sm text-zinc-900 focus:outline-none focus:border-zinc-500"
+                      className="field flex-1 min-w-0 px-2.5 py-2 text-sm"
                     />
-                    <button onClick={saveRename} className="p-2 rounded-md bg-zinc-900 text-white shrink-0">
+                    <button onClick={saveRename} className="icon-btn bg-blue-900 text-white hover:text-white shrink-0">
                       <Check className="w-3.5 h-3.5" />
                     </button>
                   </>
@@ -148,14 +148,14 @@ export const CollectionPicker: React.FC<Props> = ({
                     <button
                       title="Rename"
                       onClick={() => { setRenamingId(c.id); setRenameValue(c.name); }}
-                      className="p-1.5 mr-1 rounded-md text-zinc-400 hover:text-zinc-900 shrink-0"
+                      className="icon-btn bg-transparent mr-1 text-zinc-400"
                     >
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => toggle(c.id)}
                       className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${
-                        on ? 'bg-zinc-900 border-zinc-900 text-white' : 'border-zinc-300 text-transparent'
+                        on ? 'bg-blue-900 border-blue-900 text-white' : 'border-zinc-300 text-transparent'
                       }`}
                     >
                       <Check className="w-3.5 h-3.5" />
@@ -188,12 +188,12 @@ export const CollectionPicker: React.FC<Props> = ({
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && create()}
             placeholder="New collection — e.g. Basel Paris"
-            className="flex-1 bg-white border border-zinc-300 rounded-lg px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:border-zinc-500"
+            className="field flex-1 px-3 py-2.5 text-sm"
           />
           <button
             onClick={create}
             disabled={creating || !newName.trim()}
-            className="px-3 rounded-lg bg-zinc-100 border border-zinc-200 text-zinc-700 hover:bg-zinc-200 disabled:opacity-40"
+            className="btn-quiet px-4"
           >
             <Plus className="w-4 h-4" />
           </button>
@@ -202,7 +202,7 @@ export const CollectionPicker: React.FC<Props> = ({
         {/* bulk delete — manage mode only: dots select, this enacts */}
         {manageMode && chosen.length > 0 && (
           confirmingBulk ? (
-            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 mb-3">
+            <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 mb-3">
               <div className="text-sm text-zinc-900 mb-2">
                 Delete {chosen.length} collection{chosen.length === 1 ? '' : 's'}? The artworks themselves are kept.
               </div>
@@ -216,11 +216,11 @@ export const CollectionPicker: React.FC<Props> = ({
                     setBulkDeleting(false);
                     setConfirmingBulk(false);
                   }}
-                  className="px-3 py-1.5 rounded-full bg-rose-500 text-white text-xs font-semibold disabled:opacity-60"
+                  className="btn-danger px-3.5 py-2 text-xs"
                 >
                   {bulkDeleting ? 'Deleting…' : 'Delete'}
                 </button>
-                <button onClick={() => setConfirmingBulk(false)} className="px-3 py-1.5 rounded-full bg-white border border-zinc-300 text-zinc-600 text-xs">
+                <button onClick={() => setConfirmingBulk(false)} className="btn-quiet bg-white px-3.5 py-2 text-xs">
                   Cancel
                 </button>
               </div>
@@ -228,7 +228,7 @@ export const CollectionPicker: React.FC<Props> = ({
           ) : (
             <button
               onClick={() => setConfirmingBulk(true)}
-              className="w-full bg-rose-500 text-white text-sm font-semibold rounded-full py-2.5 mb-3 hover:bg-rose-400"
+              className="btn-danger w-full text-sm py-3 mb-3"
             >
               Delete {chosen.length} collection{chosen.length === 1 ? '' : 's'}
             </button>
@@ -237,7 +237,7 @@ export const CollectionPicker: React.FC<Props> = ({
 
         <button
           onClick={() => onConfirm(chosen)}
-          className="w-full bg-zinc-900 text-white font-semibold rounded-full py-3 hover:bg-zinc-700"
+          className="btn-primary w-full py-3.5"
         >
           {confirmLabel}
         </button>

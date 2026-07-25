@@ -106,7 +106,7 @@ export const InboxView: React.FC<Props> = ({ uploads, reviewStats, onUploaded, o
           <p className="text-sm font-medium text-zinc-900">Drop gallery PDFs here</p>
           <p className="text-xs text-zinc-500">The AI reads each one in the background — keep adding more.</p>
         </div>
-        <button onClick={() => inputRef.current?.click()} className="shrink-0 px-3.5 py-2 bg-zinc-900 text-white text-xs font-semibold rounded-full hover:bg-zinc-700">
+        <button onClick={() => inputRef.current?.click()} className="btn-primary shrink-0 px-3.5 py-2 text-xs">
           Choose
         </button>
         <input ref={inputRef} type="file" accept="application/pdf" multiple hidden onChange={(e) => e.target.files && handleFiles(e.target.files)} />
@@ -137,7 +137,7 @@ export const InboxView: React.FC<Props> = ({ uploads, reviewStats, onUploaded, o
               const rs = u.status === 'done' ? reviewStatus(reviewStats[u.id]) : null;
               return (
               <SwipeRow key={u.id} onDelete={() => removeUpload(u)}>
-                <div className="flex items-center gap-3 border border-zinc-200 rounded-xl px-4 py-3 bg-white select-none">
+                <div className="flex items-center gap-3 border border-zinc-200 rounded-2xl px-4 py-3 bg-white select-none">
                   {u.status === 'processing' ? (
                     <Loader2 className="w-5 h-5 text-blue-600 animate-spin shrink-0" />
                   ) : (
@@ -158,7 +158,7 @@ export const InboxView: React.FC<Props> = ({ uploads, reviewStats, onUploaded, o
                             onChange={(e) => setEditName(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && saveEdit()}
                             autoFocus
-                            className="w-full bg-white border border-zinc-300 rounded-md px-2 py-1 text-xs text-zinc-900 focus:outline-none focus:border-zinc-500"
+                            className="field w-full px-2 py-1.5 text-xs"
                           />
                         </label>
                         <div className="flex items-end gap-1.5">
@@ -168,11 +168,11 @@ export const InboxView: React.FC<Props> = ({ uploads, reviewStats, onUploaded, o
                               value={editGallery}
                               onChange={(e) => setEditGallery(e.target.value)}
                               onKeyDown={(e) => e.key === 'Enter' && saveEdit()}
-                              className="w-full bg-white border border-zinc-300 rounded-md px-2 py-1 text-xs text-zinc-900 focus:outline-none focus:border-zinc-500"
+                              className="field w-full px-2 py-1.5 text-xs"
                             />
                           </label>
-                          <button onClick={saveEdit} className="p-1.5 rounded-md bg-zinc-900 text-white shrink-0">
-                            <Check className="w-3.5 h-3.5" />
+                          <button onClick={saveEdit} className="icon-btn bg-blue-900 text-white hover:text-white shrink-0">
+                            <Check className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
@@ -194,18 +194,18 @@ export const InboxView: React.FC<Props> = ({ uploads, reviewStats, onUploaded, o
                           title="Review this PDF in the deck"
                           onPointerDown={(e) => e.stopPropagation()}
                           onClick={() => onReview(u)}
-                          className="p-1.5 rounded-md bg-zinc-100 text-zinc-500 hover:text-zinc-900 shrink-0"
+                          className="icon-btn"
                         >
-                          <Layers className="w-3.5 h-3.5" />
+                          <Layers className="w-4 h-4" />
                         </button>
                       )}
                       <button
                         title="Edit PDF name and gallery"
                         onPointerDown={(e) => e.stopPropagation()}
                         onClick={() => startEdit(u)}
-                        className="p-1.5 rounded-md bg-zinc-100 text-zinc-500 hover:text-zinc-900 shrink-0"
+                        className="icon-btn"
                       >
-                        <Pencil className="w-3.5 h-3.5" />
+                        <Pencil className="w-4 h-4" />
                       </button>
                     </>
                   )}
