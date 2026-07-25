@@ -163,7 +163,7 @@ export const LibraryView: React.FC<Props> = ({
     <div className="flex-1 flex flex-col min-h-0">
       {/* everything scrolls together — the controls simply slide off the top,
           no animated collapse to glitch mid-scroll */}
-      <div className={`flex-1 overflow-y-auto px-4 ${actionBarOpen ? 'pb-24' : 'pb-6'}`}>
+      <div className={`flex-1 overflow-y-auto px-4 ${actionBarOpen ? 'pb-nav-stacked' : 'pb-nav'}`}>
       <div className="space-y-2 pt-1 pb-2">
         <div className="flex items-center gap-2">
           {/* the Passed/Selects slide is the page's main control — heavy on
@@ -328,14 +328,14 @@ export const LibraryView: React.FC<Props> = ({
       {/* multi-select action lozenge — the one floating lozenge left, popping
           up just above the permanent bottom nav */}
       {actionBarOpen && showHint && nothingChecked && (
-        <div className="absolute left-1/2 -translate-x-1/2 bottom-[4.6rem] z-30 bg-zinc-900 text-white text-xs rounded-full px-4 py-2 shadow-lg whitespace-nowrap">
+        <div className="absolute left-1/2 -translate-x-1/2 z-30 bg-zinc-900 text-white text-xs rounded-full px-4 py-2 shadow-lg whitespace-nowrap" style={{ bottom: 'calc(var(--nav-clearance) + 56px)' }}>
           Tap works to select them
         </div>
       )}
       {actionBarOpen && (
         // icon-only round buttons — everything fits at once, no scrolling;
         // each carries a title for what it does
-        <div className="absolute left-4 right-4 bottom-3 z-30 h-[52px] bg-white/95 backdrop-blur border border-zinc-200 shadow-[0_8px_24px_rgba(0,0,0,0.14)] rounded-full px-3 flex items-center gap-2">
+        <div className="absolute left-4 right-4 z-30 h-[52px] bg-white/95 backdrop-blur border border-zinc-200 shadow-[0_8px_24px_rgba(0,0,0,0.14)] rounded-full px-3 flex items-center gap-2" style={{ bottom: 'calc(var(--nav-clearance) - 4px)' }}>
           <span className={`text-xs font-bold rounded-full min-w-[24px] h-6 px-1.5 flex items-center justify-center shrink-0 ${
             nothingChecked ? 'bg-zinc-100 text-zinc-400' : 'bg-zinc-900 text-white'
           }`}>

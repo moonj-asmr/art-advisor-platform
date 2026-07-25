@@ -89,7 +89,7 @@ export const InboxView: React.FC<Props> = ({ uploads, reviewStats, onUploaded, o
   };
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 pb-8 pt-2">
+    <div className="flex-1 overflow-y-auto px-4 pb-nav pt-2">
       {/* upload zone — compact */}
       <div
         className={`border-2 border-dashed rounded-2xl px-5 py-5 flex items-center gap-4 transition-colors ${

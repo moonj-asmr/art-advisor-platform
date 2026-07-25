@@ -24,4 +24,20 @@
     @apply bg-white text-zinc-900 antialiased;
     -webkit-tap-highlight-color: transparent;
   }
+  :root {
+    /* The floating glass tab bar overlays content: its bottom offset
+       (safe area + 8px) plus its height (64px) plus a breathing gap.
+       Scrollable views pad their bottom by this so nothing hides under it. */
+    --nav-clearance: calc(env(safe-area-inset-bottom, 0px) + 84px);
+  }
+}
+
+@layer utilities {
+  .pb-nav {
+    padding-bottom: var(--nav-clearance);
+  }
+  /* when the Organize action bar floats above the tab bar too */
+  .pb-nav-stacked {
+    padding-bottom: calc(var(--nav-clearance) + 64px);
+  }
 }

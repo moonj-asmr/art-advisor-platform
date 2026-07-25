@@ -8,7 +8,11 @@ const config: CapacitorConfig = {
   appName: 'AdvisoryDeck',
   webDir: 'dist',
   ios: {
-    contentInset: 'automatic',
+    // The web app handles safe areas itself (env(safe-area-inset-*) CSS with
+    // viewport-fit=cover). 'automatic' would make iOS add its own insets on
+    // top, shoving the bottom nav into the home-indicator zone where taps
+    // trigger the home gesture instead of the buttons.
+    contentInset: 'never',
   },
 };
 
