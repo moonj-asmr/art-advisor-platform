@@ -69,7 +69,7 @@ export const DeckView: React.FC<Props> = ({
               : 'Upload a gallery PDF in the Inbox tab and the works will appear here to review.'}
         </p>
         {history.length > 0 && (
-          <button onClick={undo} className="mt-2 flex items-center gap-2 text-sm text-zinc-600 border border-zinc-300 rounded-full px-4 py-2 hover:bg-zinc-50">
+          <button onClick={undo} className="btn-quiet mt-2 text-sm px-4 py-2.5">
             <RotateCcw className="w-4 h-4" /> Undo last swipe
           </button>
         )}
@@ -92,11 +92,12 @@ export const DeckView: React.FC<Props> = ({
           />
         ))}
       </div>
+      {/* the only colour on this screen — the artwork stays the hero */}
       <div className="flex items-center justify-center gap-5 py-1">
         <button
           aria-label="Pass"
           onClick={() => decide(top, 'passed')}
-          className="w-11 h-11 rounded-full bg-zinc-100 flex items-center justify-center text-rose-500 hover:bg-zinc-200 active:scale-95 transition"
+          className="glass w-12 h-12 rounded-full flex items-center justify-center text-rose-500 active:scale-95 transition"
         >
           <X className="w-5 h-5" strokeWidth={2.5} />
         </button>
@@ -104,14 +105,14 @@ export const DeckView: React.FC<Props> = ({
           aria-label="Undo"
           onClick={undo}
           disabled={history.length === 0}
-          className="w-8 h-8 rounded-full bg-zinc-100 text-zinc-500 flex items-center justify-center disabled:opacity-30 hover:bg-zinc-200 active:scale-95 transition"
+          className="icon-btn w-9 h-9 bg-zinc-100 text-zinc-500 disabled:opacity-30 active:scale-95 transition"
         >
-          <RotateCcw className="w-3.5 h-3.5" />
+          <RotateCcw className="w-4 h-4" />
         </button>
         <button
           aria-label="Select"
           onClick={() => decide(top, 'liked')}
-          className="w-11 h-11 rounded-full bg-zinc-100 flex items-center justify-center text-emerald-500 hover:bg-zinc-200 active:scale-95 transition"
+          className="glass w-12 h-12 rounded-full flex items-center justify-center text-emerald-500 active:scale-95 transition"
         >
           <Heart className="w-5 h-5" strokeWidth={2.5} />
         </button>

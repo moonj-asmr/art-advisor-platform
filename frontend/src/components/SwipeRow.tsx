@@ -38,7 +38,7 @@ export const SwipeRow: React.FC<{ onDelete: () => void; children: React.ReactNod
   };
 
   return (
-    <div className="relative overflow-hidden rounded-xl">
+    <div className="relative overflow-hidden rounded-2xl">
       <button
         onClick={onDelete}
         className="absolute inset-y-0 right-0 w-20 bg-rose-500 text-white flex flex-col items-center justify-center gap-0.5 text-[11px] font-semibold"

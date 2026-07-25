@@ -47,7 +47,7 @@ export const ExportSheet: React.FC<Props> = ({ artworks, onClose }) => {
     }
   };
 
-  const field = 'mt-1 w-full bg-white border border-zinc-300 rounded-lg px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:border-zinc-500';
+  const field = 'field mt-1 w-full px-3 py-2 text-sm';
 
   return (
     <Sheet
@@ -82,7 +82,7 @@ export const ExportSheet: React.FC<Props> = ({ artworks, onClose }) => {
       <button
         onClick={doExport}
         disabled={busy}
-        className="w-full flex items-center justify-center gap-2 bg-emerald-600 text-white font-semibold rounded-full py-3 hover:bg-emerald-500 disabled:opacity-60"
+        className="btn-export w-full py-3.5"
       >
         {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
         {busy ? 'Building PDF…' : 'Download PDF'}

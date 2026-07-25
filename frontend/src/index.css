@@ -32,6 +32,81 @@
     /* bar bottom offset + bar height (68px) + breathing gap; scrollable
        views pad their bottom by this so nothing hides under the bar */
     --nav-clearance: calc(var(--nav-bottom) + 76px);
+    /* the Organize bar floats one gap above the tab bar */
+    --actionbar-bottom: calc(var(--nav-clearance) + 4px);
+  }
+}
+
+@layer components {
+  /* The one glass material — the floating tab bar, the Organize action bar
+     and the hint capsule all share it so they read as one family. */
+  /* Roughly Apple's light "regular material": enough tint that controls stay
+     legible over artwork, thin enough that colour still moves behind it. */
+  .glass {
+    background-color: rgba(255, 255, 255, 0.8);
+    -webkit-backdrop-filter: blur(40px) saturate(1.9);
+    backdrop-filter: blur(40px) saturate(1.9);
+    @apply border border-white/70 shadow-[0_8px_32px_rgba(0,0,0,0.16)];
+  }
+  /* Without blur support the tint alone would let artwork text ghost through,
+     so fall back to a near-solid surface instead. */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass {
+      background-color: rgba(255, 255, 255, 0.97);
+    }
+  }
+  /* a floating bar: glass, pinned to the same left/right insets everywhere */
+  .glass-bar {
+    @apply glass absolute left-3 right-3 z-30 rounded-full;
+  }
+
+  /* Icon buttons. Circular everywhere, never below a comfortable tap size;
+     -m-1 + p-1 keeps the touch area larger than the visible circle. */
+  .icon-btn {
+    @apply w-9 h-9 rounded-full flex items-center justify-center shrink-0
+           text-zinc-600 bg-zinc-100 hover:text-zinc-900 transition-colors
+           disabled:opacity-35;
+  }
+  /* on glass a white fill would vanish — a soft dark wash reads as a chip */
+  .icon-btn-glass {
+    @apply icon-btn w-10 h-10 bg-zinc-900/[0.07] text-zinc-700;
+  }
+  .icon-btn-accent {
+    @apply icon-btn w-10 h-10 bg-blue-900 text-white hover:text-white;
+  }
+  .icon-btn-danger {
+    @apply icon-btn w-10 h-10 bg-zinc-900/[0.07] text-rose-600 hover:text-rose-700;
+  }
+  .icon-btn-export {
+    @apply icon-btn w-10 h-10 bg-emerald-600 text-white hover:text-white hover:bg-emerald-500;
+  }
+
+  /* Text buttons — pills at three weights. */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-full
+           bg-blue-900 text-white font-semibold hover:bg-blue-800
+           disabled:opacity-60 transition-colors;
+  }
+  .btn-export {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-full
+           bg-emerald-600 text-white font-semibold hover:bg-emerald-500
+           disabled:opacity-60 transition-colors;
+  }
+  .btn-quiet {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-full
+           bg-zinc-100 border border-zinc-200 text-zinc-700
+           hover:text-zinc-900 disabled:opacity-50 transition-colors;
+  }
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-full
+           bg-rose-500 text-white font-semibold hover:bg-rose-400
+           disabled:opacity-60 transition-colors;
+  }
+
+  /* Text inputs share one radius. */
+  .field {
+    @apply bg-white border border-zinc-300 rounded-[10px] text-zinc-900
+           focus:outline-none focus:border-blue-900;
   }
 }
 
@@ -39,8 +114,8 @@
   .pb-nav {
     padding-bottom: var(--nav-clearance);
   }
-  /* when the Organize action bar floats above the tab bar too */
+  /* when the Organize action bar (56px) floats above the tab bar too */
   .pb-nav-stacked {
-    padding-bottom: calc(var(--nav-clearance) + 64px);
+    padding-bottom: calc(var(--actionbar-bottom) + 68px);
   }
 }

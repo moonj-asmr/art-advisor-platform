@@ -150,7 +150,7 @@ export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
   const set = <K extends keyof AdvisorSettings>(key: K, value: AdvisorSettings[K]) =>
     setSettings((s) => (s ? { ...s, [key]: value } : s));
 
-  const field = 'mt-1 w-full bg-white border border-zinc-300 rounded-lg px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:border-zinc-500';
+  const field = 'field mt-1 w-full px-3 py-2 text-sm';
 
   // alignment slider: sticky ticks at left, thirds, center, right
   const ALIGN_TICKS = [0, 1 / 3, 0.5, 2 / 3, 1];
@@ -176,12 +176,12 @@ export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
       <div className="flex justify-end gap-2">
         {section === 'style' && (
           <button onClick={openPreview} disabled={previewLoading}
-                  className="w-36 flex items-center justify-center gap-1.5 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-full hover:bg-emerald-500 disabled:opacity-60">
+                  className="btn-export w-36 py-2.5 text-sm">
             {previewLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />} Preview PDF
           </button>
         )}
         <button onClick={save} disabled={saving}
-                className="w-24 flex items-center justify-center gap-1.5 py-2 bg-zinc-900 text-white text-sm font-semibold rounded-full hover:bg-zinc-700 disabled:opacity-60">
+                className="btn-primary w-24 py-2.5 text-sm">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
         </button>
       </div>
@@ -191,7 +191,7 @@ export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
   const menuRow = (icon: React.ReactNode, title: string, sub: string, target: Section) => (
     <button
       onClick={() => go(target)}
-      className="w-full flex items-center gap-3 rounded-xl border border-zinc-200 px-4 py-3.5 text-left hover:bg-zinc-50"
+      className="w-full flex items-center gap-3 rounded-2xl border border-zinc-200 px-4 py-3.5 text-left hover:bg-zinc-50"
     >
       <span className="text-zinc-500">{icon}</span>
       <span className="min-w-0 flex-1">
@@ -232,7 +232,7 @@ export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
                   <div className="text-xs text-zinc-500">Logged in</div>
                 </div>
                 <button onClick={doLogout}
-                        className="shrink-0 px-3.5 py-2 bg-zinc-100 border border-zinc-200 rounded-full text-sm text-zinc-700 hover:text-zinc-900">
+                        className="btn-quiet shrink-0 px-4 py-2.5 text-sm">
                   Log out
                 </button>
               </div>
@@ -251,7 +251,7 @@ export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
                 </label>
                 <div className="flex items-center gap-2">
                   <button onClick={doLogin} disabled={loggingIn || !loginEmail.trim() || !loginPassword}
-                          className="px-4 py-2 bg-zinc-900 text-white text-sm font-semibold rounded-full hover:bg-zinc-700 disabled:opacity-50">
+                          className="btn-primary px-4 py-2.5 text-sm">
                     {loggingIn ? 'Logging in…' : settings.has_password ? 'Log in' : 'Create login'}
                   </button>
                   {!settings.has_password && (
@@ -281,7 +281,7 @@ export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
               ) : (
                 <span className="text-xs text-zinc-400">No logo yet</span>
               )}
-              <label className="ml-auto shrink-0 px-3.5 py-2 bg-zinc-100 border border-zinc-200 rounded-full text-sm text-zinc-700 cursor-pointer">
+              <label className="btn-quiet ml-auto shrink-0 px-4 py-2.5 text-sm cursor-pointer">
                 {settings.logo_url ? 'Replace logo' : 'Upload logo'}
                 <input type="file" accept="image/png,image/jpeg" hidden onChange={(e) => onLogo(e.target.files?.[0])} />
               </label>
@@ -302,7 +302,7 @@ export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
             </label>
             <div className="flex justify-end mb-4">
               <button onClick={applyStyle} disabled={applying || !settings.style_request.trim()}
-                      className="w-28 flex items-center justify-center gap-1.5 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-full hover:bg-indigo-500 disabled:opacity-50">
+                      className="btn-primary w-28 py-2.5 text-sm">
                 {applying ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />} Apply
               </button>
             </div>
@@ -327,7 +327,7 @@ export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
               <select
                 value={settings.font}
                 onChange={(e) => set('font', e.target.value)}
-                className="mt-1 w-full bg-white border border-zinc-300 rounded-lg px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:border-zinc-500"
+                className="field mt-1 w-full px-3 py-2 text-sm"
               >
                 {(settings.font_options ?? [{ key: 'serif', label: 'Times (classic serif)' }]).map((f) => (
                   <option key={f.key} value={f.key}>{f.label}</option>
@@ -366,7 +366,7 @@ export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
                 ['accent_hex', 'Artist'],
                 ['price_hex', 'Price'],
               ] as const).map(([key, label]) => (
-                <label key={key} className="flex flex-col items-center gap-1 border border-zinc-200 rounded-xl py-2.5 cursor-pointer">
+                <label key={key} className="flex flex-col items-center gap-1 border border-zinc-200 rounded-2xl py-2.5 cursor-pointer">
                   <input type="color"
                          value={(key === 'price_hex' ? settings.price_hex || settings.text_hex : settings[key]) || '#ffffff'}
                          onChange={(e) => set(key, e.target.value)}
@@ -392,7 +392,7 @@ export const SettingsSheet: React.FC<Props> = ({ onClose }) => {
             <button
               aria-label="Close preview"
               onClick={() => setPreviewPages(null)}
-              className="p-2.5 rounded-full bg-white/15 text-white hover:bg-white/25"
+              className="icon-btn w-10 h-10 bg-white/15 text-white hover:text-white"
             >
               <X className="w-5 h-5" />
             </button>

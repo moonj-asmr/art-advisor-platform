@@ -121,19 +121,19 @@ function App() {
             allocation.length === 0 ? (
               <button
                 onClick={() => setPickingAllocation(true)}
-                className="flex items-center gap-1 bg-zinc-100 border border-zinc-200 text-zinc-600 text-sm rounded-full px-3.5 py-2"
+                className="btn-quiet text-sm px-3.5 py-2"
               >
                 <Plus className="w-4 h-4" /> Collection
               </button>
             ) : (
-              <div className="flex items-center gap-0.5 bg-zinc-900 text-white text-sm rounded-full pl-4 pr-1 py-1 max-w-[58%]">
+              <div className="flex items-center gap-0.5 bg-blue-900 text-white text-sm rounded-full pl-4 pr-1 py-1 max-w-[58%]">
                 <button onClick={() => setPickingAllocation(true)} className="truncate py-1 font-medium">
                   → {allocationLabel}
                 </button>
                 <button
                   aria-label="Clear collection"
                   onClick={() => setAllocation([])}
-                  className="p-1.5 rounded-full text-zinc-400 hover:text-white shrink-0"
+                  className="p-1.5 rounded-full text-blue-300 hover:text-white shrink-0"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -145,7 +145,7 @@ function App() {
             <button
               aria-label="Settings"
               onClick={() => setShowSettings(true)}
-              className="p-2.5 rounded-full bg-zinc-100 border border-zinc-200 text-zinc-600 hover:text-zinc-900"
+              className="icon-btn w-10 h-10 border border-zinc-200"
             >
               <Settings className="w-5 h-5" />
             </button>
@@ -194,13 +194,8 @@ function App() {
       {/* floating glass tab bar — a translucent pill hovering above the safe
           area, content scrolling behind it (views pad by --nav-clearance) */}
       <nav
-        className="absolute left-3 right-3 z-30 rounded-full flex items-center gap-1 p-1.5 border border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.16)] overflow-hidden"
-        style={{
-          bottom: 'var(--nav-bottom)',
-          backgroundColor: 'rgba(255,255,255,0.62)',
-          WebkitBackdropFilter: 'blur(24px) saturate(1.8)',
-          backdropFilter: 'blur(24px) saturate(1.8)',
-        }}
+        className="glass-bar flex items-center gap-1 p-1.5 overflow-hidden"
+        style={{ bottom: 'var(--nav-bottom)' }}
       >
         {([
           ['deck', Layers, 'Deck', pending.length],
