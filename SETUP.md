@@ -18,6 +18,15 @@ Xcode by hand — CI does everything on a macOS runner.
   signed release, uploads to TestFlight.
 - **Pull request** → `build_check` lane: compiles the app without signing.
   A red ❌ on the PR means the iOS build would break.
+- **Manual run** (Actions → iOS → "Run workflow") → `build_check` plus a
+  `preflight` job that verifies every secret end-to-end without touching
+  anything: all five secrets present, the certificates-repo token can read
+  and write, the App Store Connect key authenticates, and the app record
+  exists. Run it after rotating any secret.
+
+Builds use the newest Xcode 26 on the runner (a `Select Xcode 26` step in
+the workflow) because Apple requires the iOS 26 SDK for App Store uploads.
+When Apple raises the bar again, update that step's glob.
 
 ## Configuration (GitHub → repo Settings → Secrets and variables → Actions)
 
@@ -73,9 +82,17 @@ If you rotate the App Store Connect API key, update the three
 
 ## Costs to know about
 
-GitHub's macOS runners bill at 10× normal minutes. A typical iOS build run is
-~10–15 runner minutes (≈100–150 billed minutes). On a free private-repo plan
-(2,000 min/month) that supports roughly a dozen deploys a month — merging
-several PRs at once into `main` batches them into one deploy. If it gets
-tight: make the repo public, upgrade the plan, or restrict `build_check` to
-PRs that touch `frontend/`.
+GitHub's macOS runners bill at 10× normal minutes. Measured real runs: a
+TestFlight deploy takes ~2–3 runner minutes (≈20–30 billed minutes) and a PR
+compile check ~1.5 minutes. The workflow also caps runaway jobs
+(`timeout-minutes`: 15 for checks, 30 for deploys) so a hang can't burn the
+budget. On a free private-repo plan (2,000 min/month) that's roughly 60+
+deploys a month; this repo is public, where Actions minutes are free.
+
+## Renewals to remember
+
+- **MATCH_REPO_PAT** (fine-grained GitHub token): expires 1 year after
+  creation — regenerate in GitHub → Settings → Developer settings, then
+  update the secret and run a manual preflight.
+- **Distribution certificate**: expires after 1 year. When it does, follow
+  "If signing breaks" above — match recreates it in one run.
