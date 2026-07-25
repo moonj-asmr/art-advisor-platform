@@ -1,6 +1,7 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeftRight, CheckCircle2, FileDown, FolderCog, FolderMinus, FolderPlus, Layers, Pencil } from 'lucide-react';
+import { ArrowLeftRight, CheckCircle2, FileDown, FolderCog, FolderMinus, FolderPlus, Layers, Pencil, Share } from 'lucide-react';
 import { api, mediaUrl } from '../lib/api';
+import { shareArtwork } from '../lib/share';
 import type { Artwork, Collection } from '../types';
 import { ArtworkDetail } from './ArtworkDetail';
 import { CollectionPicker } from './CollectionPicker';
@@ -304,6 +305,9 @@ export const LibraryView: React.FC<Props> = ({
                       <div className="flex items-center gap-1 mt-2">
                         <button title="Edit caption" onClick={(e) => { e.stopPropagation(); openEdit(a); }} className="p-1.5 rounded-md bg-zinc-100 text-zinc-500 hover:text-zinc-900">
                           <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button title="Share" onClick={(e) => { e.stopPropagation(); shareArtwork(a); }} className="p-1.5 rounded-md bg-zinc-100 text-zinc-500 hover:text-zinc-900">
+                          <Share className="w-3.5 h-3.5" />
                         </button>
                         <button
                           title={segment === 'liked' ? 'Move to Passed' : 'Move to Selects'}
