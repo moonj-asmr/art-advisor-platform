@@ -210,19 +210,21 @@ function App() {
           <button
             key={key}
             onClick={() => setTab(key)}
-            className={`relative flex-1 h-[50px] flex items-center justify-center gap-1.5 text-sm rounded-full transition-colors ${
-              tab === key ? 'bg-zinc-900 text-white font-medium shadow' : 'text-zinc-600'
+            className={`relative flex-1 h-[56px] flex flex-col items-center justify-center gap-1 rounded-[1.4rem] transition-colors ${
+              tab === key ? 'bg-white/70 text-blue-900 shadow-sm' : 'text-zinc-500'
             }`}
           >
-            <Icon className="w-4 h-4" />
-            {label}
-            {badge > 0 && (
-              <span className={`text-[10px] font-bold rounded-full min-w-[15px] h-[15px] px-1 flex items-center justify-center ${
-                tab === key ? 'bg-white text-zinc-900' : 'bg-zinc-300/70 text-zinc-700'
-              }`}>
-                {badge}
-              </span>
-            )}
+            <span className="relative">
+              <Icon className="w-6 h-6" strokeWidth={tab === key ? 2.2 : 1.8} />
+              {badge > 0 && (
+                <span className={`absolute -top-1.5 -right-3 text-[10px] font-bold rounded-full min-w-[16px] h-[16px] px-1 flex items-center justify-center ${
+                  tab === key ? 'bg-blue-900 text-white' : 'bg-zinc-300/80 text-zinc-700'
+                }`}>
+                  {badge}
+                </span>
+              )}
+            </span>
+            <span className={`text-[11px] leading-none ${tab === key ? 'font-semibold' : 'font-medium'}`}>{label}</span>
           </button>
         ))}
       </nav>
