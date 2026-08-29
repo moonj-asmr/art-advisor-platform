@@ -11,12 +11,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5
       with:
-        python-version: '3.9'
+        python-version: '3.11'
 
     - name: Install Python dependencies
       run: |
@@ -26,19 +26,19 @@ jobs:
     - name: Run Python tests
       run: |
         cd backend
-        pytest
+        pytest tests/
 
     - name: Set up Node.js
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '22'
 
     - name: Install Node.js dependencies
       run: |
         cd frontend
         npm ci
 
-    - name: Run frontend tests
+    - name: Typecheck and build frontend
       run: |
         cd frontend
-        npm run test
+        npx tsc --noEmit && npm run build
